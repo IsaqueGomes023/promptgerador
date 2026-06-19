@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PromptGerador — Transforme ideias em prompts otimizados</title>
+<meta name="description" content="Gere prompts profissionais para qualquer IA. 100% gratuito, sem login, funciona offline." />
+<style>
+:root{
+  --accent:#D97757;          /* Claude clay/coral */
+  --accent-strong:#C15F3C;
+  --accent-soft:#F7E9E2;
+  --bg:#FAF9F5;              /* warm off-white */
+  --surface:#FFFFFF;
+  --surface-2:#F2F0E9;
+  --text:#1F1E1C;
+  --text-soft:#6B6862;
+  --border:#E6E3DA;
+  --sidebar:#262521;
+  --sidebar-text:#D8D4CA;
+  --sidebar-active:#34322D;
+  --ok:#3F8A5F; --danger:#C2492F;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+  --radius:14px;
+}
+[data-theme="dark"]{
+  --bg:#1A1916; --surface:#242320; --surface-2:#2E2C28; --text:#F2F0E9;
+  --text-soft:#A8A49B; --border:#36342F; --sidebar:#141310; --sidebar-text:#CFCBC1;
+  --sidebar-active:#2A2925; --accent-soft:#3A2A22;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;font-size:15px;line-height:1.5}
+button{font-family:inherit;cursor:pointer}
+a{color:inherit;text-decoration:none}
+
+/* ---------- Sidebar ---------- */
+.sidebar{width:248px;background:var(--sidebar);color:var(--sidebar-text);display:flex;flex-direction:column;padding:20px 14px;position:fixed;top:0;bottom:0;left:0}
+.brand{display:flex;align-items:center;gap:10px;padding:8px 10px 18px}
+.brand .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-strong));display:grid;place-items:center;color:#fff;font-weight:800;font-size:18px}
+.brand b{color:#fff;font-size:17px;font-weight:700;letter-spacing:-.2px}
+.brand span{color:var(--accent)}
+.nav{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.nav a{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;color:var(--sidebar-text);font-weight:500;font-size:14.5px;transition:.15s}
+.nav a:hover{background:var(--sidebar-active)}
+.nav a.active{background:var(--accent);color:#fff}
+.nav a svg{width:18px;height:18px;flex:none}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding:10px}
+.side-foot small{color:#8a877e;font-size:11.5px;line-height:1.4}
+.theme-btn{display:flex;align-items:center;gap:8px;background:var(--sidebar-active);border:none;color:var(--sidebar-text);padding:9px 12px;border-radius:10px;font-size:13px}
+
+/* ---------- Main ---------- */
+.main{margin-left:248px;flex:1;padding:34px 40px 60px;max-width:1080px;width:100%}
+.page{display:none;animation:fade .25s ease}
+.page.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h1{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.sub{color:var(--text-soft);margin-top:4px;font-size:14.5px}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.stat{flex:1;min-width:150px}
+.stat .n{font-size:30px;font-weight:800;letter-spacing:-1px}
+.stat .l{color:var(--text-soft);font-size:13px;margin-top:2px}
+.stat .ic{width:34px;height:34px;border-radius:9px;background:var(--accent-soft);color:var(--accent-strong);display:grid;place-items:center;margin-bottom:12px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;border:none;padding:12px 18px;border-radius:11px;font-weight:600;font-size:14.5px;transition:.15s}
+.btn:hover{background:var(--accent-strong)}
+.btn.block{width:100%;justify-content:center}
+.btn.ghost{background:var(--surface-2);color:var(--text)}
+.btn.ghost:hover{background:var(--border)}
+.btn.sm{padding:8px 12px;font-size:13px;border-radius:9px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* form */
+textarea,input,select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px 14px;color:var(--text);font-size:14.5px;font-family:inherit;resize:vertical}
+textarea:focus,input:focus,select:focus{outline:none;border-color:var(--accent)}
+label.fld{display:block;font-weight:600;font-size:13px;margin:18px 0 8px;color:var(--text)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 13px;font-size:13.5px;font-weight:500;color:var(--text);transition:.12s}
+.chip:hover{border-color:var(--accent)}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-strong)}
+.muted{color:var(--text-soft);font-size:13px}
+
+/* result */
+.result{margin-top:22px}
+.reco{display:flex;gap:14px;align-items:flex-start;background:var(--accent-soft);border:1px solid #e6cdbf;border-radius:12px;padding:16px 18px;margin-bottom:18px}
+[data-theme="dark"] .reco{border-color:#5a3a2c}
+.reco .badge{background:var(--accent);color:#fff;font-weight:700;padding:5px 11px;border-radius:8px;font-size:13px;white-space:nowrap}
+.promptbox{position:relative;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:18px;white-space:pre-wrap;font-size:13.6px;line-height:1.62;font-family:'Cascadia Code','Consolas',ui-monospace,monospace;max-height:520px;overflow:auto}
+.toolbar{display:flex;gap:8px;margin:14px 0 0;flex-wrap:wrap}
+
+/* list items */
+.item{display:flex;gap:14px;align-items:flex-start;padding:15px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px;transition:.12s}
+.item:hover{border-color:var(--accent)}
+.item .body{flex:1;min-width:0}
+.item h4{font-size:14.5px;font-weight:600;margin-bottom:3px}
+.item .meta{font-size:12px;color:var(--text-soft);display:flex;gap:10px;flex-wrap:wrap}
+.item .tag{background:var(--surface-2);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;color:var(--text-soft)}
+.item .acts{display:flex;gap:6px;flex:none}
+.iconbtn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);display:grid;place-items:center;color:var(--text-soft)}
+.iconbtn:hover{color:var(--accent);border-color:var(--accent)}
+.iconbtn.fav.on{color:var(--accent);border-color:var(--accent)}
+.empty{text-align:center;color:var(--text-soft);padding:60px 20px}
+.empty svg{width:46px;height:46px;opacity:.4;margin-bottom:12px}
+.search{max-width:340px;margin-bottom:16px}
+
+/* toast */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:var(--bg);padding:13px 18px;border-radius:11px;font-size:14px;font-weight:500;opacity:0;transform:translateY(12px);transition:.25s;pointer-events:none;z-index:99}
+#toast.show{opacity:1;transform:none}
+.section-title{font-size:15px;font-weight:700;margin:26px 0 12px;letter-spacing:-.2px}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+
+/* responsive */
+@media(max-width:820px){
+  .sidebar{width:64px;padding:16px 8px}
+  .brand b,.nav a span,.side-foot small,.theme-btn span{display:none}
+  .brand{justify-content:center;padding:8px 0 16px}
+  .nav a{justify-content:center}
+  .main{margin-left:64px;padding:22px 18px 60px}
+}
+.utable{width:100%;border-collapse:collapse;font-size:13px}
+.utable th,.utable td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border)}
+.utable th{color:var(--text-soft);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.3px}
+.utable tbody tr:hover{background:var(--surface-2)}
+.chips.oneline{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px}
+.chips.oneline .chip{flex:0 0 auto}
+#cfg-key{font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="logo">P</div>
+    <b>Prompt<span>Gerador</span></b>
+  </div>
+  <nav class="nav" id="nav">
+    <a data-route="dashboard" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a data-route="generate">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l1.5 4L11 8.5 6.5 10 5 14l-1.5-4L-1 8.5 3.5 7z" transform="translate(4 1)"/><path d="M18 13l.9 2.4L21 16l-2.1.6L18 19l-.9-2.4L15 16l2.1-.6z"/></svg>
+      <span>Gerar Prompt</span>
+    </a>
+    <a data-route="history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+      <span>Histórico</span>
+    </a>
+    <a data-route="favorites">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17.3l-6.2 3.7 1.6-7L2 9.2l7.1-.6L12 2l2.9 6.6 7.1.6-5.4 4.8 1.6 7z"/></svg>
+      <span>Favoritos</span>
+    </a>
+    <a data-route="uso">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/></svg>
+      <span>Uso</span>
+    </a>
+    <a data-route="config">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 2.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H7a1.6 1.6 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V7a1.6 1.6 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+      <span>Configurações</span>
+    </a>
+  </nav>
+  <div class="side-foot">
+    <button class="theme-btn" id="themeBtn"><span>Tema escuro</span></button>
+    <small>100% gratuito · sem login · seus dados ficam só neste navegador</small>
+  </div>
+</aside>
+
+<main class="main">
+
+  <!-- ============ DASHBOARD ============ -->
+  <section class="page active" id="page-dashboard">
+    <div class="spread">
+      <div>
+        <h1>Olá 👋</h1>
+        <p class="sub">Transforme qualquer ideia em um prompt profissional em segundos.</p>
+      </div>
+      <button class="btn" onclick="go('generate')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Novo Prompt
+      </button>
+    </div>
+
+    <div class="row" style="margin-top:22px">
+      <div class="card stat">
+        <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10"/></svg></div>
+        <div class="n" id="st-total">0</div><div class="l">Prompts gerados</div>
+      </div>
+      <div class="card stat">
+        <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 17.3l-6.2 3.7 1.6-7L2 9.2l7.1-.6L12 2l2.9 6.6 7.1.6-5.4 4.8 1.6 7z"/></svg></div>
+        <div class="n" id="st-fav">0</div><div class="l">Favoritos</div>
+      </div>
+      <div class="card stat">
+        <div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></div>
+        <div class="n" id="st-week">0</div><div class="l">Nos últimos 7 dias</div>
+      </div>
+    </div>
+
+    <div class="section-title">Comece por um tipo de tarefa</div>
+    <div class="chips" id="dash-types"></div>
+
+    <div class="spread" style="margin-top:28px">
+      <div class="section-title" style="margin:0">Gerados recentemente</div>
+      <a class="muted" href="#history" style="font-weight:600;color:var(--accent)">Ver tudo →</a>
+    </div>
+    <div id="dash-recent" style="margin-top:12px"></div>
+  </section>
+
+  <!-- ============ GENERATE ============ -->
+  <section class="page" id="page-generate">
+    <h1>O que você quer criar?</h1>
+    <p class="sub">Descreva sua ideia, escolha o tipo de tarefa e receba um prompt otimizado + a melhor IA recomendada.</p>
+
+    <div class="card" style="margin-top:22px">
+      <label class="fld">Sua ideia</label>
+      <textarea id="g-idea" rows="4" placeholder="Ex: Escrever um post para LinkedIn sobre produtividade no trabalho remoto que gere engajamento..."></textarea>
+
+      <label class="fld">Tipo de tarefa</label>
+      <div class="chips" id="g-types"></div>
+
+      <label class="fld">Adicionar mais contexto (opcional)</label>
+      <textarea id="g-context" rows="2" placeholder="Público-alvo, tom de voz, restrições, formato desejado..."></textarea>
+
+      <div style="margin-top:18px">
+        <button class="btn block" id="g-run">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l1.5 4L11 8.5 6.5 10 5 14l-1.5-4L-1 8.5 3.5 7z" transform="translate(4 1)"/></svg>
+          Analisar e Gerar Prompt
+        </button>
+      </div>
+    </div>
+
+    <div class="result" id="g-result" style="display:none">
+      <div class="spread">
+        <div class="section-title" style="margin:0">Prompt otimizado</div>
+        <span class="muted" id="g-len"></span>
+      </div>
+      <div class="promptbox" id="g-prompt" style="margin-top:10px"></div>
+      <div class="toolbar">
+        <button class="btn sm" id="g-copy">Copiar</button>
+        <button class="btn sm ghost" id="g-favbtn">☆ Favoritar</button>
+        <button class="btn sm ghost" id="g-regen">Gerar novamente</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section class="page" id="page-history">
+    <div class="spread">
+      <div><h1>Histórico</h1><p class="sub">Todos os prompts que você gerou ficam salvos aqui, neste navegador.</p></div>
+      <button class="btn ghost sm" id="h-clear">Limpar tudo</button>
+    </div>
+    <input class="search" id="h-search" placeholder="Buscar no histórico..." style="margin-top:18px"/>
+    <div id="h-list"></div>
+  </section>
+
+  <!-- ============ FAVORITES ============ -->
+  <section class="page" id="page-favorites">
+    <div class="spread">
+      <div><h1>Favoritos</h1><p class="sub">Seus prompts marcados como favoritos, prontos para reutilizar.</p></div>
+      <button class="btn ghost sm" id="f-clear">Limpar tudo</button>
+    </div>
+    <input class="search" id="f-search" placeholder="Buscar nos favoritos..." style="margin-top:18px"/>
+    <div id="f-list"></div>
+  </section>
+
+  <!-- ============ USO ============ -->
+  <section class="page" id="page-uso">
+    <h1>Uso</h1>
+    <p class="sub">Mapeamento da sua utilização — tokens, padrões de horário e dias da semana.</p>
+    <div class="row" style="margin-top:20px">
+      <div class="card stat"><div class="n" id="u-today">0</div><div class="l">Prompts hoje</div></div>
+      <div class="card stat"><div class="n" id="u-total">0</div><div class="l">Total no histórico</div></div>
+      <div class="card stat"><div class="n" id="u-gem">0</div><div class="l">Via Gemini</div></div>
+      <div class="card stat"><div class="n" id="u-tpl">0</div><div class="l">Via modelo padrão</div></div>
+      <div class="card stat" style="text-align:center"><div id="u-gauge"></div><div class="l" id="u-tok" style="margin-top:2px">0 tokens hoje</div></div>
+    </div>
+    <div class="section-title">Linha do tempo (últimos 14 dias)</div>
+    <div class="card"><div id="u-timeline"></div></div>
+    <div class="row" style="margin-top:16px">
+      <div class="card" style="flex:1;min-width:280px"><div class="muted" style="margin-bottom:8px;font-weight:600">Por dia da semana</div><div id="u-weekday"></div></div>
+      <div class="card" style="flex:1;min-width:280px"><div class="muted" style="margin-bottom:8px;font-weight:600">Por horário do dia</div><div id="u-hour"></div></div>
+    </div>
+    <div class="spread"><div class="section-title" style="margin:26px 0 12px">Detalhamento</div><button class="btn ghost sm" id="u-copy">Copiar tabela</button></div>
+    <div class="empty" id="u-empty" style="display:none">Nenhuma geração ainda. Gere um prompt para começar a mapear seu uso.</div>
+    <div style="overflow-x:auto"><table class="utable"><thead><tr><th>Tema</th><th>Tokens</th><th>Data</th><th>Tipo</th><th>Favorito</th><th>Motor</th></tr></thead><tbody id="u-tbody"></tbody></table></div>
+  </section>
+
+  <!-- ============ CONFIG ============ -->
+  <section class="page" id="page-config">
+    <h1>Configurações</h1>
+    <p class="sub">Conecte sua chave do Gemini para gerar prompts com IA. Sem chave, o site usa o motor template (grátis e offline).</p>
+    <div class="card" style="margin-top:18px;max-width:660px">
+      <label class="fld">Chave da API do Google Gemini (nível gratuito)</label>
+      <input id="cfg-key" type="password" placeholder="cole sua chave aqui (AIza...)" autocomplete="off" />
+      <p class="muted" id="cfg-status" style="margin-top:10px"></p>
+      <label class="fld">Meta diária de tokens (para o velocímetro da tela Uso)</label>
+      <input id="cfg-meta" type="number" min="1000" step="1000" placeholder="1000000" />
+      <p class="muted" style="margin-top:10px">🔒 A chave fica salva <b>apenas neste navegador</b>, <b>nunca</b> é enviada ao Git/nuvem e não é compartilhada com outros usuários. Depois de salva, ela fica oculta (não é reexibida). Gere a sua gratuitamente em <b>aistudio.google.com/apikey</b>. Modelo: <b>gemini-2.5-flash</b> (~1.500 gerações/dia grátis).</p>
+      <div class="toolbar">
+        <button class="btn sm" id="cfg-save">Salvar</button>
+        <button class="btn sm ghost" id="cfg-clear">Remover chave</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast"></div>
+
+<script>
+/* ====================== DADOS / STORAGE ====================== */
+const LS={hist:'pg_history',fav:'pg_favorites',theme:'pg_theme',gem:'pg_gemini_key',metaTok:'pg_meta_tokens'};
+const load=k=>{try{return JSON.parse(localStorage.getItem(k))||[]}catch(e){return[]}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let history=load(LS.hist), favorites=load(LS.fav);
+
+/* ====================== MOTOR DE TEMPLATE ====================== */
+const TYPES={
+  texto:{label:'Texto',emoji:'📝',ai:'Claude',aiAlt:'GPT-4',
+    reason:'tarefas de escrita longa, copy e raciocínio textual têm melhor qualidade no Claude (e GPT-4 como alternativa).',
+    role:'redator(a) e copywriter sênior, especialista em comunicação persuasiva',
+    steps:['Identifique o público-alvo e o objetivo central da mensagem.','Defina o ângulo/gancho principal que prende a atenção.','Estruture o conteúdo em introdução, desenvolvimento e fechamento com chamada para ação.','Revise para clareza, ritmo e consistência de tom.'],
+    specs:['Tom de voz: [definir — ex.: profissional, próximo, inspirador]','Extensão: [definir — ex.: até 1500 caracteres]','Evitar: clichês, jargão vazio e frases genéricas','Incluir uma chamada para ação clara ao final'],
+    output:'Entregue o texto final pronto para uso. Se fizer sentido, ofereça 2–3 variações de título/abertura.'},
+  imagem:{label:'Imagem',emoji:'🖼️',ai:'Midjourney',aiAlt:'DALL·E / Nano Banana (Gemini)',
+    reason:'geração e edição de imagem fotorrealista é mais forte em Midjourney/DALL·E; para edição a partir de uma foto, Nano Banana (Gemini).',
+    role:'diretor(a) de arte e especialista sênior em geração de imagens por IA',
+    steps:['Defina o sujeito principal e a composição (enquadramento, ângulo).','Especifique estilo visual, iluminação e paleta de cores.','Detalhe ambiente, textura e nível de realismo.','Liste parâmetros técnicos (proporção, resolução, qualidade).'],
+    specs:['Estilo: [fotorrealista / ilustração / 3D / etc.]','Iluminação: [ex.: luz natural suave, estúdio]','Proporção: [1:1 / 16:9 / 4:5]','Evitar: distorções, texto incorreto, artefatos de IA'],
+    output:'Forneça o prompt de imagem em inglês (melhor compatibilidade) e uma versão em português para referência.'},
+  codigo:{label:'Código',emoji:'💻',ai:'Claude',aiAlt:'GPT-4',
+    reason:'raciocínio técnico, refatoração e contexto de código são pontos fortes do Claude.',
+    role:'engenheiro(a) de software sênior, especialista em código limpo e boas práticas',
+    steps:['Entenda o objetivo e as restrições técnicas (linguagem, framework, versão).','Planeje a solução antes de escrever (estrutura, edge cases).','Implemente com código legível, comentado e testável.','Aponte riscos, complexidade e sugira testes.'],
+    specs:['Linguagem/stack: [definir]','Padrões: código limpo, nomes claros, tratamento de erros','Incluir: explicação curta das decisões + exemplo de uso','Evitar: dependências desnecessárias'],
+    output:'Entregue o código em bloco, seguido de uma explicação objetiva e instruções de teste.'},
+  analise:{label:'Análise',emoji:'📊',ai:'Claude',aiAlt:'GPT-4 com interpretador',
+    reason:'leitura de dados, interpretação e síntese analítica funcionam bem no Claude; para cálculo em arquivos, GPT-4 com interpretador.',
+    role:'analista de dados sênior, especialista em transformar dados em decisões',
+    steps:['Entenda o contexto do negócio e a pergunta a ser respondida.','Identifique padrões, tendências, anomalias e correlações.','Quantifique os achados e avalie a confiabilidade.','Traduza em insights acionáveis e recomendações priorizadas.'],
+    specs:['Foco: [métrica/pergunta principal]','Profundidade: [resumo executivo / análise detalhada]','Incluir: números, comparações e nível de confiança','Evitar: conclusões sem suporte nos dados'],
+    output:'Entregue: (1) principais achados em bullets, (2) análise detalhada, (3) recomendações priorizadas.'},
+  traducao:{label:'Tradução',emoji:'🌐',ai:'DeepL',aiAlt:'Claude / GPT-4',
+    reason:'precisão idiomática é excelente no DeepL; para adaptação de tom e contexto, Claude/GPT.',
+    role:'tradutor(a) profissional, especialista em localização e adaptação cultural',
+    steps:['Identifique idioma de origem e destino e o registro (formal/informal).','Traduza preservando significado, tom e intenção, não apenas palavra a palavra.','Adapte expressões idiomáticas e referências culturais.','Revise fluência e naturalidade no idioma de destino.'],
+    specs:['Idiomas: [origem] → [destino]','Registro: [formal / informal / técnico]','Preservar: termos técnicos e nomes próprios','Evitar: tradução literal que soe artificial'],
+    output:'Entregue a tradução final. Quando houver ambiguidade, apresente a melhor opção e uma nota curta.'},
+  resumo:{label:'Resumo',emoji:'📄',ai:'Claude',aiAlt:'GPT-4',
+    reason:'janela de contexto longa e síntese fiel são pontos fortes do Claude.',
+    role:'especialista sênior em síntese e curadoria de conteúdo',
+    steps:['Leia e identifique a tese central e os pontos de maior relevância.','Descarte redundâncias e detalhes secundários.','Organize as ideias principais em ordem lógica.','Garanta que o resumo seja fiel ao original, sem distorções.'],
+    specs:['Tamanho do resumo: [ex.: 5 bullets / 1 parágrafo / 200 palavras]','Foco: [o que mais importa para o leitor]','Manter: dados e conclusões essenciais','Evitar: opinião própria e informação que não está na fonte'],
+    output:'Entregue o resumo no formato pedido, seguido (opcional) de 3 pontos-chave em bullets.'},
+  audio:{label:'Áudio',emoji:'🎧',ai:'ElevenLabs',aiAlt:'Claude (roteiro)',
+    reason:'síntese de voz natural é a especialidade do ElevenLabs; o roteiro pode ser criado no Claude.',
+    role:'roteirista e diretor(a) de áudio, especialista em narração e locução',
+    steps:['Defina o objetivo, o público e a duração do áudio.','Escreva um roteiro com linguagem falada (não escrita).','Marque entonação, pausas e ênfase.','Ajuste ritmo para soar natural ao ser narrado.'],
+    specs:['Duração: [ex.: 30s / 2min]','Tom de voz: [ex.: caloroso, enérgico, sério]','Estilo: linguagem coloquial e fácil de falar','Evitar: frases longas demais para respirar'],
+    output:'Entregue o roteiro pronto para narração, com marcações de pausa/ênfase entre [colchetes].'},
+  video:{label:'Vídeo',emoji:'🎬',ai:'Runway',aiAlt:'Sora / Kling',
+    reason:'geração de vídeo por IA é mais madura em Runway/Sora/Kling.',
+    role:'roteirista e diretor(a) de vídeo, especialista em conteúdo curto e storytelling',
+    steps:['Defina a mensagem central e o gancho dos primeiros 3 segundos.','Estruture o roteiro em cenas (visual + fala/legenda).','Especifique estilo visual, ritmo e trilha.','Finalize com chamada para ação.'],
+    specs:['Duração: [ex.: 30s vertical]','Estilo: [ex.: dinâmico, cinematográfico]','Incluir: descrição de cada cena e do áudio','Evitar: cenas longas e início sem gancho'],
+    output:'Entregue um roteiro em tabela por cena (tempo, visual, fala/legenda) + sugestão de trilha.'},
+  planilhas:{label:'Planilhas',emoji:'📈',ai:'Claude',aiAlt:'GPT-4',
+    reason:'criação de fórmulas, estrutura de planilha e lógica de cálculo funcionam bem no Claude/GPT-4.',
+    role:'especialista sênior em Excel/Google Sheets e modelagem de dados',
+    steps:['Entenda o objetivo da planilha e os dados disponíveis.','Defina a estrutura (abas, colunas, tipos de dado).','Crie fórmulas/funções necessárias e explique cada uma.','Sugira validações, formatação condicional e gráficos úteis.'],
+    specs:['Ferramenta: [Excel / Google Sheets]','Incluir: fórmulas prontas para colar e explicação','Considerar: escalabilidade e clareza','Evitar: fórmulas frágeis ou excessivamente complexas'],
+    output:'Entregue a estrutura proposta + as fórmulas em bloco, cada uma com explicação curta.'},
+  outro:{label:'Outro',emoji:'✨',ai:'Claude',aiAlt:'GPT-4',
+    reason:'para tarefas gerais e versáteis, Claude e GPT-4 oferecem o melhor equilíbrio.',
+    role:'especialista sênior no domínio descrito pelo usuário',
+    steps:['Esclareça o objetivo e o resultado esperado.','Quebre a tarefa em etapas lógicas de execução.','Execute cada etapa com profundidade e exemplos.','Revise a entrega quanto a completude e clareza.'],
+    specs:['Formato: [definir]','Tom/estilo: [definir]','Incluir: exemplos concretos quando ajudar','Evitar: respostas vagas ou genéricas'],
+    output:'Entregue a resposta estruturada e pronta para uso, no formato mais adequado à tarefa.'}
+};
+
+/* ---- perfis específicos por domínio (detecção por palavra-chave) ---- */
+const PROFILES={
+ bi:{kw:['power bi','powerbi','dax','dashboard','kpi','indicador','star schema','etl','data warehouse','databricks','semantic model'],ai:'Claude',aiAlt:'GPT-4 com interpretador',reason:'raciocínio técnico de dados, modelagem e DAX.',role:'Especialista Sênior em Business Intelligence e Engenheiro de Dados, com domínio de modelagem dimensional e DAX',
+  steps:['Análise de Requisitos: extraia os KPIs, dimensões e métricas de sucesso da fonte fornecida.','Modelagem de Dados: defina o esquema (Star Schema), separando tabelas Fato e Dimensão.','Desenvolvimento: crie as medidas DAX e estruture as visualizações com boas práticas.','Validação: confira a consistência dos números e a clareza do storytelling visual.'],
+  specs:['Priorize medidas DAX em vez de colunas calculadas','Aplique boas práticas de Data Storytelling e UI/UX (hierarquia, filtros intuitivos)','Documente as fórmulas complexas','Evite gráficos redundantes ou poluição visual'],
+  output:'Entregue: 1) Sumário executivo; 2) Dicionário de dados (métricas e dimensões); 3) Estrutura DAX documentada; 4) Recomendações de layout.'},
+ web:{kw:['cartão de visita','cartao de visita','vcard','landing page','site','página','pagina','html','css','tailwind','front-end','frontend','componente','react','linktree','interface'],ai:'Claude',aiAlt:'GPT-4',reason:'geração de artefatos web (HTML) direto no preview.',role:'Desenvolvedor(a) Front-end especialista em UI/UX e Creative Technologist',
+  steps:['Análise: defina objetivo, público e identidade visual (cores, tipografia).','Arquitetura da Informação: organize a hierarquia visual e a navegação.','Implementação: construa em single-page responsivo (mobile-first).','Interatividade: adicione botões/links táteis e microanimações suaves.'],
+  specs:['Estética moderna e clean, fiel à identidade da marca','Layout 100% mobile-first e responsivo','Use placeholders entre [colchetes] para dados/links ausentes','Código limpo e comentado para fácil replicação'],
+  output:'Forneça o código em um único arquivo (HTML + Tailwind via CDN + ícones SVG inline), pronto para o preview do Claude.'},
+ dev:{kw:['código','codigo','função','funcao','script','python','javascript','api','bug','refatorar','refatoração','algoritmo','backend','endpoint'],ai:'Claude',aiAlt:'GPT-4',reason:'raciocínio técnico e contexto de código.',role:'Engenheiro(a) de Software Sênior, especialista em código limpo e boas práticas',
+  steps:['Entenda objetivo e restrições (linguagem, framework, versão).','Planeje a solução (estrutura, edge cases) antes de codar.','Implemente com código legível, comentado e testável.','Aponte riscos e sugira testes.'],
+  specs:['Linguagem/stack: [definir]','Trate erros e casos extremos','Inclua exemplo de uso','Evite dependências desnecessárias'],
+  output:'Entregue o código em bloco, seguido de explicação objetiva e instruções de teste.'},
+ copy:{kw:['post','e-mail de vendas','email de vendas','anúncio','anuncio','copy','legenda','instagram','linkedin','persuasivo','newsletter','headline'],ai:'Claude',aiAlt:'GPT-4',reason:'redação persuasiva e raciocínio de copy.',role:'Copywriter de resposta direta e Redator(a) Sênior, especialista em conversão',
+  steps:['Identifique o público-alvo e a dor principal.','Defina o gancho e a promessa central.','Estruture com prova, benefícios e quebra de objeções.','Feche com CTA claro e P.S. estratégico.'],
+  specs:['Tom: [definir — ex.: autoritário e próximo]','Parágrafos curtos (até 3 linhas)','Inclua 3 opções de título/assunto','Evite clichês e promessas irreais'],
+  output:'Entregue: 1) 3 títulos/assuntos; 2) corpo do texto; 3) CTA; 4) P.S.'},
+ juridico:{kw:['contrato','cláusula','clausula','jurídico','juridico','termos de uso','lgpd','advogad','prestação de serviço','rescisão','parecer','alienação fiduciária','leilão','imobiliário','due diligence','consolidação fiduciária'],ai:'Claude',aiAlt:'GPT-4',reason:'redação jurídica estruturada (contratos e pareceres) com base na legislação.',role:'Advogado(a) e Consultor(a) Jurídico(a) Sênior, especialista em contratos e pareceres técnico-jurídicos sob a legislação brasileira',
+  steps:['Enquadramento: identifique a natureza da demanda, as partes/o ativo e a legislação aplicável.','Estrutura: organize o documento em seções claras (cabeçalho, análise, fundamentação, conclusão).','Fundamentação: sustente cada ponto na legislação e na doutrina pertinentes.','Riscos e Mitigação: aponte riscos e como tratá-los, com objetividade e sem alarmismo.'],
+  specs:['Linguagem jurídica formal, técnica e segura','Cite as leis/artigos aplicáveis (ex.: Código Civil, LGPD, CTN art. 130)','Use [colchetes] para dados variáveis','Sem emojis, sem informalidade e sem alarmismo'],
+  output:'Documento estruturado em seções/cláusulas numeradas (minuta ou parecer), pronto para preenchimento e envio.'},
+ docbi:{kw:['descrição breve','descrever painel','mapear painel','documentar painel','painéis','painel do power bi','sobre o que é o painel','copilot','propósito do painel'],ai:'Microsoft Copilot',aiAlt:'Claude',reason:'documentação e síntese executiva de dashboards.',role:'Especialista Sênior em Business Intelligence e Analista de Dados, focado em documentação executiva de dashboards',
+  steps:['Identificação de Domínio: identifique a área/processo de negócio do painel (ex.: Vendas, RH, Logística).','Propósito Central: determine o objetivo principal do painel.','Mapeamento de Conteúdo: identifique as principais métricas (KPIs) e os filtros/dimensões.','Síntese: condense em uma descrição curta e executiva.'],
+  specs:['Resposta curta e direta: no máximo 3 linhas (ou 1 parágrafo)','Responda: o que é, qual o propósito e quais as principais informações','Tom profissional, focado em valor de negócio','Sem jargão técnico desnecessário'],
+  output:'Entregue a descrição em até 3 linhas, pronta para repassar à gestão. Inclua 1–2 exemplos se ajudar.'},
+ imagem:{kw:['imagem','foto','restaurar foto','logo','ilustração','ilustracao','midjourney','dall-e','headshot','retrato','banner','avatar'],ai:'Midjourney',aiAlt:'DALL·E / Nano Banana (Gemini)',reason:'geração e edição de imagem fotorrealista.',role:'Diretor(a) de Arte e especialista sênior em geração de imagens por IA',
+  steps:['Defina sujeito principal, composição e enquadramento.','Especifique estilo visual, iluminação e paleta.','Detalhe ambiente, textura e nível de realismo.','Liste parâmetros (proporção, resolução, qualidade).'],
+  specs:['Estilo: [fotorrealista / ilustração / 3D]','Iluminação: [ex.: luz natural suave, estúdio]','Proporção: [1:1 / 16:9 / 4:5]','Evite distorções, texto incorreto e artefatos'],
+  output:'Forneça o prompt em inglês (melhor compatibilidade) e uma versão em português.'},
+ video:{kw:['vídeo','video','reels','roteiro de vídeo','tiktok','youtube','shorts'],ai:'Runway',aiAlt:'Sora / Kling',reason:'geração de vídeo por IA.',role:'Roteirista e Diretor(a) de vídeo, especialista em conteúdo curto',
+  steps:['Defina a mensagem e o gancho dos 3 primeiros segundos.','Estruture o roteiro em cenas (visual + fala/legenda).','Especifique estilo visual, ritmo e trilha.','Finalize com chamada para ação.'],
+  specs:['Duração: [ex.: 30s vertical]','Estilo: [ex.: dinâmico, cinematográfico]','Descreva cada cena e o áudio','Evite início sem gancho'],
+  output:'Entregue um roteiro em tabela por cena (tempo, visual, fala/legenda) + sugestão de trilha.'},
+ audio:{kw:['áudio','locução','locucao','narração','narracao','voiceover','podcast','jingle'],ai:'ElevenLabs',aiAlt:'Claude (roteiro)',reason:'síntese de voz natural.',role:'Roteirista e Diretor(a) de áudio, especialista em narração',
+  steps:['Defina objetivo, público e duração.','Escreva o roteiro em linguagem falada.','Marque entonação, pausas e ênfase.','Ajuste o ritmo para soar natural.'],
+  specs:['Duração: [ex.: 30s]','Tom de voz: [ex.: caloroso, enérgico]','Linguagem coloquial e fácil de falar','Evite frases longas demais para respirar'],
+  output:'Entregue o roteiro pronto para narração, com marcações de pausa/ênfase entre [colchetes].'},
+ traducao:{kw:['traduzir','tradução','traducao','versão em inglês','localizar','localização'],ai:'DeepL',aiAlt:'Claude / GPT-4',reason:'precisão idiomática.',role:'Tradutor(a) profissional, especialista em localização e adaptação cultural',
+  steps:['Identifique idioma de origem e destino e o registro.','Traduza preservando significado, tom e intenção.','Adapte expressões idiomáticas e referências culturais.','Revise fluência e naturalidade.'],
+  specs:['Idiomas: [origem] → [destino]','Registro: [formal / informal / técnico]','Preserve termos técnicos e nomes próprios','Evite tradução literal artificial'],
+  output:'Entregue a tradução final; em caso de ambiguidade, mostre a melhor opção e uma nota curta.'},
+ resumo:{kw:['resumir','resumo','sintetizar','tldr','síntese','sintese','condensar'],ai:'Claude',aiAlt:'GPT-4',reason:'janela de contexto longa e síntese fiel.',role:'Especialista sênior em síntese e curadoria de conteúdo',
+  steps:['Identifique a tese central e os pontos relevantes.','Descarte redundâncias e detalhes secundários.','Organize as ideias em ordem lógica.','Garanta fidelidade ao original.'],
+  specs:['Tamanho: [ex.: 5 bullets / 200 palavras]','Mantenha dados e conclusões essenciais','Não inclua opinião própria','Não invente informação fora da fonte'],
+  output:'Entregue o resumo no formato pedido + 3 pontos-chave em bullets.'},
+ dados:{kw:['analisar','análise de dados','analise de dados','planilha','csv','inadimplência','inadimplencia','relatório','relatorio','tendência','tendencia','estatística','dataset'],ai:'Claude',aiAlt:'GPT-4 com interpretador',reason:'interpretação de dados e síntese analítica.',role:'Analista de Dados Sênior, especialista em transformar dados em decisões',
+  steps:['Valide as colunas e a qualidade dos dados fornecidos.','Calcule as métricas-chave e segmentações relevantes.','Identifique padrões, anomalias e concentrações de risco.','Traduza em insights e recomendações priorizadas.'],
+  specs:['Baseie cada conclusão nos números; sinalize o nível de confiança','Não invente dados; marque lacunas com [a confirmar]','Quantifique e compare','Evite conclusões sem suporte'],
+  output:'Entregue: 1) resumo executivo; 2) tabelas/indicadores; 3) principais riscos; 4) recomendações priorizadas.'},
+ planilha:{kw:['excel','google sheets','fórmula','formula','vlookup','procv','tabela dinâmica','tabela dinamica','macro'],ai:'Claude',aiAlt:'GPT-4',reason:'criação de fórmulas e estrutura de planilha.',role:'Especialista sênior em Excel/Google Sheets e modelagem de dados',
+  steps:['Entenda o objetivo da planilha e os dados disponíveis.','Defina a estrutura (abas, colunas, tipos).','Crie as fórmulas/funções e explique cada uma.','Sugira validações, formatação condicional e gráficos.'],
+  specs:['Ferramenta: [Excel / Google Sheets]','Inclua fórmulas prontas para colar','Considere escalabilidade e clareza','Evite fórmulas frágeis'],
+  output:'Entregue a estrutura proposta + as fórmulas em bloco, cada uma com explicação curta.'},
+ automacao:{kw:['automação','automacao','n8n','workflow','integração','integracao','mcp','agente','zapier','make','webhook','rpa'],ai:'Claude',aiAlt:'GPT-4',reason:'orquestração e uso de ferramentas/MCP.',role:'Especialista em Automação e Orquestração de Agentes/Workflows',
+  steps:['Mapeie o gatilho, as etapas e o resultado esperado do fluxo.','Defina integrações, ferramentas (MCP/APIs) e dados trafegados.','Trate erros, limites de taxa e reprocessamento.','Documente o passo a passo e os critérios de sucesso.'],
+  specs:['Ferramenta/stack: [n8n / Make / MCP / etc.]','Inclua tratamento de erro e idempotência','Cuide da segurança de credenciais','Evite passos manuais desnecessários'],
+  output:'Entregue: 1) visão geral do fluxo; 2) etapas detalhadas; 3) integrações; 4) critérios de sucesso/parada.'},
+ estrategia:{kw:['estratégia','estrategia','go-to-market','gtm','lançamento','lancamento','roadmap','posicionamento','plano de negócio'],ai:'Claude',aiAlt:'GPT-4',reason:'raciocínio estratégico estruturado.',role:'Estrategista de Marketing e Go-to-Market Sênior',
+  steps:['Defina objetivo, público (ICP) e proposta de valor.','Mapeie canais, mensagem central e diferenciais.','Estruture um plano por fases com ações e métricas.','Defina riscos, critérios de sucesso e pontos de decisão.'],
+  specs:['Foque em ações acionáveis, não teoria','Vincule cada ação a um risco/objetivo','Inclua métricas de acompanhamento','Evite generalidades'],
+  output:'Entregue um plano em formato de roadmap por sprint/semana, com ação, responsável, métrica e entregável.'},
+ apresentacao:{kw:['apresentação','apresentacao','slides','slide','deck','powerpoint','ppt','pptx'],ai:'Claude',aiAlt:'Gamma / GPT-4',reason:'estruturação de conteúdo e geração de deck (.pptx).',role:'Designer de Apresentações Estratégicas e especialista em storytelling executivo',
+  steps:['Análise de Conteúdo: extraia e organize as informações da fonte fornecida.','Mapeamento de Template: identifique os layouts adequados (capa, lista, roadmap, detalhe) respeitando a identidade visual.','Adaptação: sintetize cada item em mensagens de negócio claras (máx. 3 por slide).','Estruturação do Deck: monte a sequência lógica (capa, resumo, conteúdo, gap analysis, próximos passos).'],
+  specs:['Fidelidade visual: use só as cores e fontes do template fornecido','Máximo 3 pontos-chave por slide','Links clicáveis destacados como botões/hyperlinks','Tom executivo, focado em valor'],
+  output:'Gere o arquivo .pptx editável. Se houver limite de exportação, forneça o roteiro slide a slide indicando o layout do template para cada um.'},
+ validacao:{kw:['validar os dados','validação de dados','validacao de dados','reconciliação','reconciliacao','conferir dados','paridade','qa de dados','auditoria de dados'],ai:'Claude',aiAlt:'GPT-4 com interpretador',reason:'QA/auditoria de dados e geração de queries SQL.',role:'Engenheiro de Dados e Analista de QA Sênior, especialista em Governança e reconciliação de dados',
+  steps:['Integridade (linhas): compare a contagem de registros entre origem, transformação e modelo final.','Acurácia (indicadores): valide os principais KPIs (somas, médias, contagens distintas) com o valor nominal exato.','Consistência temporal: confira se os filtros de data retornam os mesmos valores na origem e no painel.','Qualidade: verifique nulos, duplicatas inesperadas e integridade referencial.'],
+  specs:['Excel: fórmulas de conferência (SOMA, CONT.VALORES, tabela dinâmica)','SQL/Databricks: queries otimizadas com alias e joins corretos','Power BI: use Performance Analyzer / Analisar no Excel para extrair o DAX','Tom técnico de auditoria; velocidade com segurança'],
+  output:'Entregue: 1) Checklist de validação (Indicador | Origem | Destino | Tolerância); 2) Scripts SQL de conferência; 3) Plano de evidência; 4) 2+ validações extras sugeridas.'},
+ engdados:{kw:['databricks','spark sql','camada gold','formato gold','bronze','silver','lakehouse','etl','star schema','relacionamentos','chave estrangeira','query sql','modelagem'],ai:'Claude',aiAlt:'GPT-4',reason:'engenharia de dados em SQL/Databricks e modelagem dimensional.',role:'Engenheiro de Dados e Analista de BI Sênior, especialista em Databricks (Spark SQL) e modelagem dimensional (Star Schema)',
+  steps:['Mapeamento de Relacionamentos: analise os nomes das tabelas e identifique PKs e FKs prováveis entre Fatos e Dimensões.','Identificação de Análises: proponha os KPIs e visões gerenciais extraíveis das bases (ex.: Realizado vs. Orçado, por Centro de Custo).','Desenvolvimento SQL (camada Gold): crie queries Spark SQL otimizadas, com limpeza de nulos, padronização de tipos e granularidade correta.','Consolidação para Power BI: estruture o resultado em um Star Schema eficiente.'],
+  specs:['Use JOINs explícitos e eficientes','Comente o código com a lógica de negócio','Nomes de colunas claros para o usuário final de BI','Priorize performance para o refresh do Power BI'],
+  output:'Entregue: 1) Dicionário de relacionamentos (tabelas e chaves); 2) Lista de insights/dashboards sugeridos; 3) Scripts SQL Gold separados por tabela, prontos para o Databricks.'},
+ comparacao:{kw:['comparação','comparar','duas bases','base antiga','base legada','diferenças entre','migração de base','homologação'],ai:'Claude',aiAlt:'GPT-4 com interpretador',reason:'auditoria comparativa entre bases/versões de dados.',role:'Especialista Sênior em Engenharia de Dados e BI, focado em auditoria comparativa de bases',
+  steps:['Mapeamento Estrutural: compare os schemas — colunas novas, removidas ou renomeadas.','Análise de Interseção: identifique chaves/registros comuns às duas bases (pontos de convergência).','Análise de Divergência: registros só na base antiga, só na nova, e valores divergentes para a mesma chave.','Tipagem e Qualidade: mudanças de formato (texto/número), nulos e vazios.'],
+  specs:['Tom técnico, objetivo e analítico','Aponte prováveis renomeações (nome diferente, conteúdo igual)','Não ignore desvios de formatação (ex.: . vs ,)','Baseie o veredito nos dados'],
+  output:'Entregue: 1) Sumário executivo (linhas/colunas e % de similaridade); 2) O que é igual; 3) Relatório de deltas (estrutura, conteúdo, gaps); 4) Veredito técnico de qual base usar.'},
+ fullstack:{kw:['criar um site','criar um app','aplicativo','plataforma','sistema web','full stack','ferramenta web','whisper','transcrever'],ai:'Claude',aiAlt:'GPT-4',reason:'projeto e implementação de aplicação completa (full stack).',role:'Engenheiro(a) de Software Full Stack Sênior e Arquiteto(a) de Soluções, com foco em stacks de custo zero (free tier / open source)',
+  steps:['Análise de Viabilidade: escolha a stack e explique por que ela garante custo zero.','Arquitetura: defina frontend, backend, processamento e hospedagem.','Implementação: codifique backend e frontend de forma modular e comentada.','Deploy: indique como publicar de graça (ex.: Streamlit Cloud, Hugging Face Spaces, Vercel).'],
+  specs:['Priorize ferramentas open source e free tiers generosos','Código modular, comentado e pronto para rodar','Liste dependências e setup','Trate os formatos/edge cases relevantes'],
+  output:'Entregue: 1) Arquitetura da solução; 2) Blocos de código completos; 3) Guia de execução; 4) Dicas de deploy gratuito.'}
+};
+const STRONG={
+ bi:['power bi','powerbi','dax','star schema','databricks','semantic model'],
+ web:['cartão de visita','cartao de visita','vcard','tailwind','landing page','linktree'],
+ dev:['refatorar','python','javascript','algoritmo','endpoint','backend'],
+ copy:['e-mail de vendas','email de vendas'],
+ juridico:['contrato','cláusula','clausula','lgpd','rescisão'],
+ docbi:['descrição breve','descrever painel','mapear painel','documentar painel','propósito do painel'],
+ imagem:['restaurar','midjourney','dall-e','headshot','ilustração','ilustracao'],
+ video:['reels','tiktok','shorts','roteiro de vídeo','youtube'],
+ audio:['locução','locucao','narração','narracao','voiceover','podcast'],
+ traducao:['traduzir','tradução','traducao'],
+ resumo:['resumir','sintetizar','tldr'],
+ dados:['inadimplência','inadimplencia','dataset','análise de dados','analise de dados'],
+ planilha:['vlookup','procv','tabela dinâmica','tabela dinamica'],
+ automacao:['n8n','mcp','zapier','webhook','workflow','rpa'],
+ estrategia:['go-to-market','gtm','roadmap'],
+ apresentacao:['ppt','pptx','powerpoint','apresentação','apresentacao','slides','deck'],
+ validacao:['validar os dados','validação de dados','validacao de dados','reconciliação','reconciliacao','qa de dados','auditoria de dados','paridade'],
+ engdados:['camada gold','formato gold','spark sql','databricks','lakehouse','_bronze','_gold'],
+ comparacao:['comparação entre','comparar as bases','base antiga','base legada','diferenças entre as bases'],
+ fullstack:['full stack','site ou aplicativo','whisper','transcrever']
+};
+function detectPendingInput(text){
+  const t=text.toLowerCase();
+  const willSend=/enviar|mandar|anexar|\bsegue\b|anexo|\benvio\b|upload|aguard/.test(t);
+  if(!willSend) return '';
+  const map=[[/transcri/,'a transcrição'],[/\bbases?\b|tabelas?/,'as bases'],[/planilha|csv|\bexcel\b/,'a planilha'],[/imagem|\bfoto\b|logotipo/,'a imagem'],[/arquivo|documento|\bpdf\b/,'o arquivo'],[/\blink\b|url/,'o link']];
+  for(const m of map){ if(m[0].test(t)) return 'Aguarde o envio d'+m[1]+' para iniciar.'; }
+  return '';
+}
+function detectProfile(idea,context,fallbackKey){
+  const text=(idea+' '+(context||'')).toLowerCase();
+  const PRIORITY=[
+   ['docbi', /(descri[çc][aã]o|descrever|documentar|mapear|explicar).{0,40}(painel|paineis|painéis|dashboard)|sobre o que (o |se )?(painel|dashboard)/],
+   ['apresentacao', /(criar|montar|gerar|fazer|converter|transformar|elaborar|preciso de|quero) (uma |um |o |a )?(apresenta[çc][aã]o|deck|slides|ppt|pptx|powerpoint)|em (formato )?(ppt|pptx|powerpoint)|formato de (ppt|apresenta[çc][aã]o|slides)|deck de slides/],
+   ['comparacao', /(compara[çc][aã]o|comparar).{0,40}(bases?|dimens|arquivos?|vers[aã]o|tabelas?)|diferen[çc]as entre (as )?bases|base (antiga|legada)/],
+   ['engdados', /camada (gold|silver|bronze)|formato (gold|bronze)|_bronze|_gold|spark sql|lakehouse|tabelas? .{0,15}(bronze|gold)/],
+   ['validacao', /validar (os )?dados|valida[çc][aã]o de dados|reconcilia|conferir (os )?dados|paridade|qa de dados/],
+   ['fullstack', /(criar|fazer|desenvolver|montar|construir|cria[çc][õo]es? de).{0,30}(aplicativo|sistema|plataforma|ferramenta|app\b)|site ?(ou|e|\/) ?(aplicativo|app)/],
+   ['juridico', /\bparecer|\bjur[ií]dic|aliena[çc][aã]o fiduci|\bleil|due diligence|\bcontrato|cl[áa]usula|\blgpd\b|advogad|imobili[áa]ri/],
+   ['imagem', /(midjourney|dall.?e|headshot|restaurar foto|gerar imagem|gere uma imagem)|((foto|imagem|retrato)[^.]{0,40}(tremid|desfocad|ilumina|nitidez|restaur|ajustar|editar|profissional))/]
+  ];
+  for(const pr of PRIORITY){ if(pr[1].test(text)) return PROFILES[pr[0]]; }
+  let best=null,bestScore=0;
+  for(const k in PROFILES){ const p=PROFILES[k]; let s=0;
+    const strong=STRONG[k]||[];
+    for(const w of strong){ if(text.includes(w)) s+=3; }
+    for(const w of p.kw){ if(text.includes(w)) s+=(w.length>6?2:1); }
+    if(s>bestScore){bestScore=s;best=p;}
+  }
+  if(best&&bestScore>=2) return best;
+  return null; // não mapeado
+}
+function buildPrompt(idea, profile, context){
+  const ctx=(context||'').trim();
+  const steps=profile.steps.map((s,i)=>`${i+1}. ${s}`).join('\n');
+  const specs=profile.specs.map(s=>`- ${s}`).join('\n');
+  const closing=detectPendingInput(idea+' '+ctx);
+  return `### Papel
+Atue como ${profile.role}.
+
+### Contexto
+${ctx ? ctx : 'Objetivo do usuário: '+idea.trim()+'. Entregue o melhor resultado possível para um caso real e exigente.'}
+
+### Tarefa / Instruções de Execução (Chain-of-Thought)
+Tarefa principal: ${idea.trim()}
+${steps}
+
+### Requisitos e Restrições
+${specs}
+
+### Formato de Saída
+${profile.output}${closing ? '\n\n**'+closing+'**' : ''}`;
+}
+
+/* ====================== ROTEAMENTO ====================== */
+function go(route){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+route).classList.add('active');
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('active',a.dataset.route===route));
+  if(location.hash!=='#'+route) location.hash=route;
+  if(route==='dashboard') renderDashboard();
+  if(route==='history') renderHistory();
+  if(route==='favorites') renderFavorites();
+  if(route==='uso') renderUso();
+  if(route==='config') renderConfig();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();go(a.dataset.route)}));
+window.addEventListener('hashchange',()=>{const r=location.hash.replace('#','')||'dashboard';if(document.getElementById('page-'+r))go(r)});
+
+/* ====================== TIPOS (chips) ====================== */
+let selectedType='texto';
+function renderTypeChips(){
+  const skip=k=>k==='outro';
+  const g=document.getElementById('g-types'); g.innerHTML='';
+  Object.entries(TYPES).forEach(([k,t])=>{ if(skip(k))return;
+    const b=document.createElement('button');
+    b.className='chip'+(k===selectedType?' on':''); b.innerHTML=`${t.emoji} ${t.label}`;
+    b.onclick=()=>{selectedType=k;renderTypeChips()};
+    g.appendChild(b);
+  });
+  const d=document.getElementById('dash-types'); d.innerHTML='';
+  Object.entries(TYPES).forEach(([k,t])=>{ if(skip(k))return;
+    const b=document.createElement('button'); b.className='chip'; b.innerHTML=`${t.emoji} ${t.label}`;
+    b.onclick=()=>{selectedType=k;go('generate');renderTypeChips()};
+    d.appendChild(b);
+  });
+}
+
+/* ====================== GERAR ====================== */
+let current=null;
+const GEMINI_SYS=`Você é um Engenheiro de Prompts de elite. A partir da ideia crua do usuário, devolva APENAS um prompt profissional otimizado, em português, pronto para colar em uma IA. Gere conforme a INSTRUÇÃO REAL: identifique o domínio e o entregável e atribua um papel especialista preciso (nunca um molde genérico). Estruture em blocos Markdown: ### Papel, ### Contexto, ### Tarefa / Instruções de Execução (Chain-of-Thought) com passos numerados reais, ### Requisitos e Restrições, ### Formato de Saída. Inclua um exemplo (few-shot) quando ajudar. Se a tarefa depender de um arquivo/imagem/transcrição que o usuário vai enviar, finalize pedindo esse envio. Seja específico e enxuto. Responda só com o prompt, sem comentários.`;
+function getCfg(k){try{return localStorage.getItem(k)||''}catch(e){return''}}
+function setCfg(k,v){try{if(v)localStorage.setItem(k,v);else localStorage.removeItem(k)}catch(e){}}
+async function callGemini(idea,context){
+  const key=getCfg(LS.gem);
+  const userMsg='Tipo de tarefa sugerido: '+((TYPES[selectedType]||TYPES.outro).label)+'\nIdeia: '+idea+(context?('\nContexto adicional: '+context):'');
+  const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(key);
+  const body={contents:[{role:'user',parts:[{text:userMsg}]}],systemInstruction:{parts:[{text:GEMINI_SYS}]},generationConfig:{temperature:0.7}};
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok){let t='';try{t=(await r.json()).error?.message||''}catch(e){} throw new Error('HTTP '+r.status+(t?' - '+t.slice(0,120):''));}
+  const j=await r.json();
+  const text=(j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts||[]).map(p=>p.text).join('').trim();
+  const tokens=(j.usageMetadata&&j.usageMetadata.totalTokenCount)||0;
+  if(!text) throw new Error('resposta vazia');
+  return {prompt:text,tokens};
+}
+function showNotMapped(extra){
+  current=null;
+  const msg='⚠️ Não identificamos um domínio específico para este pedido.\n\n'+
+    'No modo offline (template), só geramos prompts para temas reconhecidos — por isso não geramos nada genérico aqui.\n\n'+
+    'Para gerar QUALQUER tipo de prompt com IA, conecte sua chave do Gemini em Configurações.\n\n'+
+    'Ou descreva melhor o que você quer, por exemplo:\n• "criar um post para Instagram sobre [tema]"\n• "gerar um contrato de [serviço]"\n• "analisar os dados de [planilha]"'+(extra?('\n\n'+extra):'');
+  document.getElementById('g-prompt').textContent=msg;
+  document.getElementById('g-len').textContent='não mapeado';
+  document.getElementById('g-favbtn').innerHTML='☆ Favoritar';
+  document.getElementById('g-result').style.display='block';
+  document.getElementById('g-result').scrollIntoView?.({behavior:'smooth',block:'start'});
+}
+async function runGenerate(){
+  const idea=document.getElementById('g-idea').value.trim();
+  if(!idea){toast('Descreva sua ideia primeiro.');document.getElementById('g-idea').focus();return}
+  const context=document.getElementById('g-context').value;
+  const profile=detectProfile(idea,context,selectedType);
+  const btn=document.getElementById('g-run');const oldhtml=btn.innerHTML;
+  let prompt,tokens,engine,ok=false;
+  if(getCfg(LS.gem)){
+    btn.disabled=true;btn.innerHTML='Gerando com Gemini…';
+    try{const res=await callGemini(idea,context);prompt=res.prompt;tokens=res.tokens;engine='gemini';ok=true;}
+    catch(err){
+      if(profile){toast('Gemini falhou ('+(err.message||'erro')+'). Usei o template.');prompt=buildPrompt(idea,profile,context);tokens=Math.round((idea.length+context.length+prompt.length)/4);engine='template';ok=true;}
+      else{toast('Gemini falhou: '+(err.message||'erro'));}
+    }
+    btn.disabled=false;btn.innerHTML=oldhtml;
+    if(!ok)return showNotMapped();
+  }else{
+    if(!profile)return showNotMapped();
+    prompt=buildPrompt(idea,profile,context);tokens=Math.round((idea.length+context.length+prompt.length)/4);engine='template';
+  }
+  current={id:Date.now(),idea,type:selectedType,typeLabel:(TYPES[selectedType]||TYPES.outro).label,context,ai:(profile&&profile.ai)||(engine==='gemini'?'Gemini':'—'),prompt,date:new Date().toISOString(),tokens,engine};
+  history.unshift(current);save(LS.hist,history);
+  document.getElementById('g-prompt').textContent=prompt;
+  document.getElementById('g-len').textContent=prompt.length+' caracteres · '+tokens+' tokens · '+(engine==='gemini'?'Gemini 2.5 Flash':'Template');
+  document.getElementById('g-favbtn').innerHTML='☆ Favoritar';
+  document.getElementById('g-result').style.display='block';
+  document.getElementById('g-result').scrollIntoView?.({behavior:'smooth',block:'start'});
+}
+document.getElementById('g-run').onclick=runGenerate;
+document.getElementById('g-regen').onclick=()=>{window.scrollTo({top:0,behavior:'smooth'});const ta=document.getElementById('g-idea');ta.focus();ta.select&&ta.select();};
+document.getElementById('g-copy').onclick=()=>{if(current)copy(current.prompt)};
+document.getElementById('g-favbtn').onclick=()=>{
+  if(!current)return;
+  toggleFav(current.id,true);
+  document.getElementById('g-favbtn').innerHTML=isFav(current.id)?'★ Favoritado':'☆ Favoritar';
+};
+
+/* ====================== HELPERS ====================== */
+function isFav(id){return favorites.includes(id)}
+function toggleFav(id,silent){
+  if(favorites.includes(id))favorites=favorites.filter(x=>x!==id);
+  else favorites.push(id);
+  save(LS.fav,favorites);
+  if(!silent)toast(isFav(id)?'Adicionado aos favoritos ★':'Removido dos favoritos');
+}
+function copy(text){navigator.clipboard.writeText(text).then(()=>toast('Copiado ✓'),()=>toast('Não foi possível copiar'))}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200)}
+function fmtDate(iso){const d=new Date(iso);return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+
+/* ====================== DASHBOARD ====================== */
+function renderDashboard(){
+  document.getElementById('st-total').textContent=history.length;
+  document.getElementById('st-fav').textContent=favorites.length;
+  const weekAgo=Date.now()-7*864e5;
+  document.getElementById('st-week').textContent=history.filter(h=>new Date(h.date).getTime()>weekAgo).length;
+  const box=document.getElementById('dash-recent');
+  const recent=history.slice(0,4);
+  box.innerHTML=recent.length?'':'<div class="empty">Nenhum prompt ainda. Clique em <b>Novo Prompt</b> para começar.</div>';
+  recent.forEach(h=>box.appendChild(itemEl(h)));
+}
+
+/* ====================== LISTAS ====================== */
+function itemEl(h){
+  const el=document.createElement('div');el.className='item';
+  el.innerHTML=`<div class="body">
+      <h4>${escapeHtml(h.idea)}</h4>
+      <div class="meta"><span class="tag">${TYPES[h.type]?.emoji||''} ${h.typeLabel}</span><span class="tag">${h.engine==='gemini'?'⚡ Gemini':'Template'}</span><span>${fmtDate(h.date)}</span></div>
+    </div>
+    <div class="acts">
+      <button class="iconbtn" title="Copiar">⧉</button>
+      <button class="iconbtn fav ${isFav(h.id)?'on':''}" title="Favoritar">${isFav(h.id)?'★':'☆'}</button>
+      <button class="iconbtn" title="Excluir">🗑</button>
+    </div>`;
+  const [bCopy,bFav,bDel]=el.querySelectorAll('.iconbtn');
+  bCopy.onclick=()=>copy(h.prompt);
+  bFav.onclick=()=>{toggleFav(h.id);refreshAll()};
+  bDel.onclick=()=>{history=history.filter(x=>x.id!==h.id);favorites=favorites.filter(x=>x!==h.id);save(LS.hist,history);save(LS.fav,favorites);refreshAll();toast('Excluído')};
+  el.querySelector('.body').onclick=()=>viewPrompt(h);
+  return el;
+}
+function viewPrompt(h){
+  selectedType=h.type;
+  document.getElementById('g-idea').value=h.idea;
+  document.getElementById('g-context').value=h.context||'';
+  renderTypeChips();
+  current=h;
+  document.getElementById('g-prompt').textContent=h.prompt;
+  document.getElementById('g-len').textContent=h.prompt.length+' caracteres'+(h.tokens?(' · '+h.tokens+' tokens'):'');
+  document.getElementById('g-favbtn').innerHTML=isFav(h.id)?'★ Favoritado':'☆ Favoritar';
+  document.getElementById('g-result').style.display='block';
+  go('generate');
+}
+function renderHistory(){
+  const q=(document.getElementById('h-search').value||'').toLowerCase();
+  const box=document.getElementById('h-list');box.innerHTML='';
+  const list=history.filter(h=>h.idea.toLowerCase().includes(q)||h.prompt.toLowerCase().includes(q));
+  if(!list.length){box.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><div>'+(history.length?'Nada encontrado.':'Seu histórico está vazio.')+'</div></div>';return}
+  list.forEach(h=>box.appendChild(itemEl(h)));
+}
+function renderFavorites(){
+  const q=(document.getElementById('f-search').value||'').toLowerCase();
+  const box=document.getElementById('f-list');box.innerHTML='';
+  const list=history.filter(h=>isFav(h.id)&&(h.idea.toLowerCase().includes(q)||h.prompt.toLowerCase().includes(q)));
+  if(!list.length){box.innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 17.3l-6.2 3.7 1.6-7L2 9.2l7.1-.6L12 2l2.9 6.6 7.1.6-5.4 4.8 1.6 7z"/></svg><div>Nenhum favorito ainda. Marque ★ em um prompt para vê-lo aqui.</div></div>';return}
+  list.forEach(h=>box.appendChild(itemEl(h)));
+}
+function refreshAll(){renderDashboard();renderHistory();renderFavorites();}
+
+/* ====================== USO / CONFIG ====================== */
+function getEng(h){return h.engine==='gemini'?'Gemini':'Template'}
+function svgBars(data){
+  const w=560,H=170,pad=26,n=data.length,max=Math.max(1,...data.map(d=>d.value));
+  const bw=(w-pad*2)/n;let s='';
+  data.forEach((d,i)=>{const bh=(d.value/max)*(H-pad-20),x=pad+i*bw,y=H-20-bh;
+    s+=`<rect x="${(x+bw*0.15).toFixed(1)}" y="${y.toFixed(1)}" width="${(bw*0.7).toFixed(1)}" height="${Math.max(0,bh).toFixed(1)}" rx="3" fill="var(--accent)"></rect>`;
+    if(d.label!=='')s+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-5}" font-size="15" text-anchor="middle" fill="var(--text-soft)">${d.label}</text>`;
+    if(d.value)s+=`<text x="${(x+bw/2).toFixed(1)}" y="${(y-3).toFixed(1)}" font-size="11" text-anchor="middle" fill="var(--text-soft)">${d.value}</text>`;});
+  return `<svg viewBox="0 0 ${w} ${H}" width="100%" preserveAspectRatio="xMidYMid meet">${s}</svg>`;
+}
+function svgLine(data){
+  const w=760,H=130,pad=30,n=data.length,max=Math.max(1,...data.map(d=>d.value));
+  const xs=i=>pad+(n<=1?0:i*(w-pad*2)/(n-1)), ys=v=>H-24-(v/max)*(H-pad-22);
+  const pts=data.map((d,i)=>`${xs(i).toFixed(1)},${ys(d.value).toFixed(1)}`).join(' ');
+  let dots='',labs='',step=Math.ceil(n/7);
+  data.forEach((d,i)=>{dots+=`<circle cx="${xs(i).toFixed(1)}" cy="${ys(d.value).toFixed(1)}" r="2.5" fill="var(--accent)"></circle>`;
+    if(i%step===0)labs+=`<text x="${xs(i).toFixed(1)}" y="${H-5}" font-size="15" text-anchor="middle" fill="var(--text-soft)">${d.label}</text>`;});
+  return `<svg viewBox="0 0 ${w} ${H}" width="100%" preserveAspectRatio="xMidYMid meet"><polyline fill="none" stroke="var(--accent)" stroke-width="2" points="${pts}"></polyline>${dots}${labs}</svg>`;
+}
+function svgGauge(usedPct){
+  usedPct=Math.min(100,Math.max(0,usedPct));const avail=100-usedPct;
+  const W=170,H=100,cx=85,cy=90,r=64;
+  const ang=p=>Math.PI*(1-p/100);
+  function arc(p0,p1,color,wd){const a0=ang(p0),a1=ang(p1);
+    const x0=cx+r*Math.cos(a0),y0=cy-r*Math.sin(a0),x1=cx+r*Math.cos(a1),y1=cy-r*Math.sin(a1);
+    return `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${color}" stroke-width="${wd}" stroke-linecap="round"/>`;}
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:180px;display:block;margin:0 auto">${arc(0,100,'var(--border)',11)}${arc(0,usedPct,'var(--accent)',11)}<text x="${cx}" y="${cy-14}" font-size="28" font-weight="800" text-anchor="middle" fill="var(--accent)">${avail.toFixed(0)}%</text><text x="${cx}" y="${cy}" font-size="11" text-anchor="middle" fill="var(--text-soft)">disponível</text></svg>`;
+}
+function copyUsoTable(){
+  const rows=[['Tema','Tokens','Data','Tipo','Favorito','Motor']];
+  history.slice(0,500).forEach(x=>rows.push([(x.idea||'').replace(/[\t\n]/g,' '),String(x.tokens||0),fmtDate(x.date),x.typeLabel||'',isFav(x.id)?'Sim':'Não',getEng(x)]));
+  copy(rows.map(r=>r.join('\t')).join('\n'));
+}
+function renderUso(){
+  const list=history;
+  const tk=d=>d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+  const todayKey=tk(new Date());
+  const todayList=list.filter(x=>tk(new Date(x.date))===todayKey);
+  document.getElementById('u-today').textContent=todayList.length;
+  document.getElementById('u-total').textContent=list.length;
+  document.getElementById('u-gem').textContent=list.filter(x=>x.engine==='gemini').length;
+  document.getElementById('u-tpl').textContent=list.filter(x=>x.engine!=='gemini').length;
+  const tokToday=todayList.reduce((s,x)=>s+(x.tokens||0),0);
+  const meta=parseInt(getCfg(LS.metaTok))||1000000;
+  document.getElementById('u-gauge').innerHTML=svgGauge(meta?tokToday/meta*100:0);
+  document.getElementById('u-tok').textContent=tokToday.toLocaleString('pt-BR')+' tokens hoje';
+  const tb=document.getElementById('u-tbody');tb.innerHTML='';
+  document.getElementById('u-empty').style.display=list.length?'none':'block';
+  list.slice(0,200).forEach(x=>{const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${escapeHtml(x.idea.slice(0,64))}${x.idea.length>64?'…':''}</td><td>${x.tokens||0}</td><td>${fmtDate(x.date)}</td><td>${escapeHtml(x.typeLabel||'')}</td><td>${isFav(x.id)?'Sim':'Não'}</td><td>${getEng(x)}</td>`;
+    tb.appendChild(tr);});
+  const days=[],today=new Date();today.setHours(0,0,0,0);
+  for(let i=13;i>=0;i--){const dt=new Date(today);dt.setDate(dt.getDate()-i);
+    days.push({key:tk(dt),label:String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0'),value:0});}
+  const dmap={};days.forEach(d=>dmap[d.key]=d);
+  list.forEach(x=>{const k=tk(new Date(x.date));if(dmap[k])dmap[k].value++;});
+  document.getElementById('u-timeline').innerHTML=svgLine(days);
+  const wd=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(l=>({label:l,value:0}));
+  list.forEach(x=>{wd[new Date(x.date).getDay()].value++;});
+  document.getElementById('u-weekday').innerHTML=svgBars(wd);
+  const hr=[];for(let i=0;i<24;i++)hr.push({label:(i%4===0?String(i)+'h':''),value:0});
+  list.forEach(x=>{hr[new Date(x.date).getHours()].value++;});
+  document.getElementById('u-hour').innerHTML=svgBars(hr);
+  const cp=document.getElementById('u-copy');if(cp)cp.onclick=copyUsoTable;
+}
+function renderConfig(){
+  const k=getCfg(LS.gem);
+  document.getElementById('cfg-key').value='';
+  document.getElementById('cfg-key').placeholder=k?'•••••••••• (chave salva — digite para substituir)':'cole sua chave aqui (AIza...)';
+  document.getElementById('cfg-status').textContent=k?'✓ Gemini conectado — geração via Gemini 2.5 Flash (chave oculta por segurança).':'Sem chave — a geração usa o motor template (grátis, offline).';
+  document.getElementById('cfg-meta').value=parseInt(getCfg(LS.metaTok))||1000000;
+}
+document.getElementById('cfg-save').onclick=()=>{
+  const v=document.getElementById('cfg-key').value.trim();
+  if(v)setCfg(LS.gem,v);
+  const m=parseInt(document.getElementById('cfg-meta').value)||1000000;setCfg(LS.metaTok,String(m));
+  toast('Configurações salvas ✓');renderConfig();
+};
+document.getElementById('cfg-clear').onclick=()=>{setCfg(LS.gem,'');document.getElementById('cfg-key').value='';toast('Chave removida');renderConfig();};
+
+document.getElementById('h-search').oninput=renderHistory;
+document.getElementById('f-search').oninput=renderFavorites;
+document.getElementById('h-clear').onclick=()=>{if(confirm('Apagar o histórico (mantendo os favoritos)?')){history=history.filter(h=>isFav(h.id));save(LS.hist,history);refreshAll();toast('Histórico limpo (favoritos mantidos)')}};
+document.getElementById('f-clear').onclick=()=>{if(confirm('Remover todos os favoritos? Os prompts continuam no histórico.')){favorites=[];save(LS.fav,favorites);refreshAll();toast('Favoritos limpos')}};
+
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* ====================== TEMA ====================== */
+const themeBtn=document.getElementById('themeBtn');
+function applyTheme(t){document.documentElement.dataset.theme=t;themeBtn.querySelector('span').textContent=t==='dark'?'Tema claro':'Tema escuro';save(LS.theme,t)}
+themeBtn.onclick=()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+let _savedTheme='light';try{_savedTheme=JSON.parse(localStorage.getItem(LS.theme))||'light'}catch(e){}
+applyTheme(_savedTheme);
+
+/* ====================== INIT ====================== */
+renderTypeChips();
+renderDashboard();
+const start=location.hash.replace('#','');
+if(start&&document.getElementById('page-'+start))go(start);
+</script>
+</body>
+</html>
