@@ -728,7 +728,7 @@ function svgLine(data){
   const pts=data.map((d,i)=>`${xs(i).toFixed(1)},${ys(d.value).toFixed(1)}`).join(' ');
   let dots='',labs='',step=Math.ceil(n/7);
   data.forEach((d,i)=>{dots+=`<circle cx="${xs(i).toFixed(1)}" cy="${ys(d.value).toFixed(1)}" r="2.5" fill="var(--accent)"></circle>`;
-    if(i%step===0)labs+=`<text x="${xs(i).toFixed(1)}" y="${H-5}" font-size="15" text-anchor="middle" fill="var(--text-soft)">${d.label}</text>`;});
+    if(i%step===0)labs+=`<text x="${xs(i).toFixed(1)}" y="${H-5}" font-size="10" text-anchor="middle" fill="var(--text-soft)">${d.label}</text>`;});
   return `<svg viewBox="0 0 ${w} ${H}" width="100%" preserveAspectRatio="xMidYMid meet"><polyline fill="none" stroke="var(--accent)" stroke-width="2" points="${pts}"></polyline>${dots}${labs}</svg>`;
 }
 function svgGauge(usedPct){
