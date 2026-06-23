@@ -19,7 +19,7 @@
   --sidebar:#262521;
   --sidebar-text:#D8D4CA;
   --sidebar-active:#34322D;
-  --ok:#3F8A5F; --danger:#C2492F;
+ 
   --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
   --radius:14px;
 }
@@ -75,8 +75,13 @@ h1{font-size:26px;font-weight:700;letter-spacing:-.5px}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 
 /* form */
-textarea,input,select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px 14px;color:var(--text);font-size:14.5px;font-family:inherit;resize:vertical}
-textarea:focus,input:focus,select:focus{outline:none;border-color:var(--accent)}
+textarea,input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:13px 14px;color:var(--text);font-size:14.5px;font-family:inherit;resize:vertical}
+textarea:focus,input:focus{outline:none;border-color:var(--accent)}
+.mic-wrap{position:relative}
+.mic-btn{position:absolute;bottom:9px;right:9px;width:34px;height:34px;border-radius:50%;border:none;background:var(--surface-2);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s;z-index:1;padding:0}
+.mic-btn:hover{background:var(--border)}
+.mic-btn.recording{background:#ef4444;color:#fff;animation:pulse-mic 1.2s ease-out infinite}
+@keyframes pulse-mic{0%{box-shadow:0 0 0 0 rgba(239,68,68,.45)}70%{box-shadow:0 0 0 9px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
 label.fld{display:block;font-weight:600;font-size:13px;margin:18px 0 8px;color:var(--text)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 13px;font-size:13.5px;font-weight:500;color:var(--text);transition:.12s}
@@ -86,8 +91,8 @@ label.fld{display:block;font-weight:600;font-size:13px;margin:18px 0 8px;color:v
 
 /* result */
 .result{margin-top:22px}
-.reco{display:flex;gap:14px;align-items:flex-start;background:var(--accent-soft);border:1px solid #e6cdbf;border-radius:12px;padding:16px 18px;margin-bottom:18px}
-[data-theme="dark"] .reco{border-color:#5a3a2c}
+
+[data-theme="dark"] 
 .reco .badge{background:var(--accent);color:#fff;font-weight:700;padding:5px 11px;border-radius:8px;font-size:13px;white-space:nowrap}
 .promptbox{position:relative;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:18px;white-space:pre-wrap;font-size:13.6px;line-height:1.62;font-family:'Cascadia Code','Consolas',ui-monospace,monospace;max-height:520px;overflow:auto}
 .toolbar{display:flex;gap:8px;margin:14px 0 0;flex-wrap:wrap}
@@ -125,7 +130,7 @@ label.fld{display:block;font-weight:600;font-size:13px;margin:18px 0 8px;color:v
 .utable th,.utable td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border)}
 .utable th{color:var(--text-soft);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.3px}
 .utable tbody tr:hover{background:var(--surface-2)}
-.chips.oneline{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px}
+
 .chips.oneline .chip{flex:0 0 auto}
 #cfg-key{font-family:ui-monospace,monospace}
 </style>
@@ -216,7 +221,12 @@ label.fld{display:block;font-weight:600;font-size:13px;margin:18px 0 8px;color:v
 
     <div class="card" style="margin-top:22px">
       <label class="fld">Sua ideia</label>
-      <textarea id="g-idea" rows="4" placeholder="Ex: Escrever um post para LinkedIn sobre produtividade no trabalho remoto que gere engajamento..."></textarea>
+      <div class="mic-wrap">
+        <textarea id="g-idea" rows="4" placeholder="Ex: Escrever um post para LinkedIn sobre produtividade no trabalho remoto que gere engajamento..." style="padding-bottom:48px"></textarea>
+        <button class="mic-btn" id="g-mic" title="Falar minha ideia">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+      </div>
 
       <label class="fld">Tipo de tarefa</label>
       <div class="chips" id="g-types"></div>
@@ -318,147 +328,97 @@ let history=load(LS.hist), favorites=load(LS.fav);
 
 /* ====================== MOTOR DE TEMPLATE ====================== */
 const TYPES={
-  texto:{label:'Texto',emoji:'📝',ai:'Claude',aiAlt:'GPT-4',
-    reason:'tarefas de escrita longa, copy e raciocínio textual têm melhor qualidade no Claude (e GPT-4 como alternativa).',
-    role:'redator(a) e copywriter sênior, especialista em comunicação persuasiva',
-    steps:['Identifique o público-alvo e o objetivo central da mensagem.','Defina o ângulo/gancho principal que prende a atenção.','Estruture o conteúdo em introdução, desenvolvimento e fechamento com chamada para ação.','Revise para clareza, ritmo e consistência de tom.'],
-    specs:['Tom de voz: [definir — ex.: profissional, próximo, inspirador]','Extensão: [definir — ex.: até 1500 caracteres]','Evitar: clichês, jargão vazio e frases genéricas','Incluir uma chamada para ação clara ao final'],
-    output:'Entregue o texto final pronto para uso. Se fizer sentido, ofereça 2–3 variações de título/abertura.'},
-  imagem:{label:'Imagem',emoji:'🖼️',ai:'Midjourney',aiAlt:'DALL·E / Nano Banana (Gemini)',
-    reason:'geração e edição de imagem fotorrealista é mais forte em Midjourney/DALL·E; para edição a partir de uma foto, Nano Banana (Gemini).',
-    role:'diretor(a) de arte e especialista sênior em geração de imagens por IA',
-    steps:['Defina o sujeito principal e a composição (enquadramento, ângulo).','Especifique estilo visual, iluminação e paleta de cores.','Detalhe ambiente, textura e nível de realismo.','Liste parâmetros técnicos (proporção, resolução, qualidade).'],
-    specs:['Estilo: [fotorrealista / ilustração / 3D / etc.]','Iluminação: [ex.: luz natural suave, estúdio]','Proporção: [1:1 / 16:9 / 4:5]','Evitar: distorções, texto incorreto, artefatos de IA'],
-    output:'Forneça o prompt de imagem em inglês (melhor compatibilidade) e uma versão em português para referência.'},
-  codigo:{label:'Código',emoji:'💻',ai:'Claude',aiAlt:'GPT-4',
-    reason:'raciocínio técnico, refatoração e contexto de código são pontos fortes do Claude.',
-    role:'engenheiro(a) de software sênior, especialista em código limpo e boas práticas',
-    steps:['Entenda o objetivo e as restrições técnicas (linguagem, framework, versão).','Planeje a solução antes de escrever (estrutura, edge cases).','Implemente com código legível, comentado e testável.','Aponte riscos, complexidade e sugira testes.'],
-    specs:['Linguagem/stack: [definir]','Padrões: código limpo, nomes claros, tratamento de erros','Incluir: explicação curta das decisões + exemplo de uso','Evitar: dependências desnecessárias'],
-    output:'Entregue o código em bloco, seguido de uma explicação objetiva e instruções de teste.'},
-  analise:{label:'Análise',emoji:'📊',ai:'Claude',aiAlt:'GPT-4 com interpretador',
-    reason:'leitura de dados, interpretação e síntese analítica funcionam bem no Claude; para cálculo em arquivos, GPT-4 com interpretador.',
-    role:'analista de dados sênior, especialista em transformar dados em decisões',
-    steps:['Entenda o contexto do negócio e a pergunta a ser respondida.','Identifique padrões, tendências, anomalias e correlações.','Quantifique os achados e avalie a confiabilidade.','Traduza em insights acionáveis e recomendações priorizadas.'],
-    specs:['Foco: [métrica/pergunta principal]','Profundidade: [resumo executivo / análise detalhada]','Incluir: números, comparações e nível de confiança','Evitar: conclusões sem suporte nos dados'],
-    output:'Entregue: (1) principais achados em bullets, (2) análise detalhada, (3) recomendações priorizadas.'},
-  traducao:{label:'Tradução',emoji:'🌐',ai:'DeepL',aiAlt:'Claude / GPT-4',
-    reason:'precisão idiomática é excelente no DeepL; para adaptação de tom e contexto, Claude/GPT.',
-    role:'tradutor(a) profissional, especialista em localização e adaptação cultural',
-    steps:['Identifique idioma de origem e destino e o registro (formal/informal).','Traduza preservando significado, tom e intenção, não apenas palavra a palavra.','Adapte expressões idiomáticas e referências culturais.','Revise fluência e naturalidade no idioma de destino.'],
-    specs:['Idiomas: [origem] → [destino]','Registro: [formal / informal / técnico]','Preservar: termos técnicos e nomes próprios','Evitar: tradução literal que soe artificial'],
-    output:'Entregue a tradução final. Quando houver ambiguidade, apresente a melhor opção e uma nota curta.'},
-  resumo:{label:'Resumo',emoji:'📄',ai:'Claude',aiAlt:'GPT-4',
-    reason:'janela de contexto longa e síntese fiel são pontos fortes do Claude.',
-    role:'especialista sênior em síntese e curadoria de conteúdo',
-    steps:['Leia e identifique a tese central e os pontos de maior relevância.','Descarte redundâncias e detalhes secundários.','Organize as ideias principais em ordem lógica.','Garanta que o resumo seja fiel ao original, sem distorções.'],
-    specs:['Tamanho do resumo: [ex.: 5 bullets / 1 parágrafo / 200 palavras]','Foco: [o que mais importa para o leitor]','Manter: dados e conclusões essenciais','Evitar: opinião própria e informação que não está na fonte'],
-    output:'Entregue o resumo no formato pedido, seguido (opcional) de 3 pontos-chave em bullets.'},
-  audio:{label:'Áudio',emoji:'🎧',ai:'ElevenLabs',aiAlt:'Claude (roteiro)',
-    reason:'síntese de voz natural é a especialidade do ElevenLabs; o roteiro pode ser criado no Claude.',
-    role:'roteirista e diretor(a) de áudio, especialista em narração e locução',
-    steps:['Defina o objetivo, o público e a duração do áudio.','Escreva um roteiro com linguagem falada (não escrita).','Marque entonação, pausas e ênfase.','Ajuste ritmo para soar natural ao ser narrado.'],
-    specs:['Duração: [ex.: 30s / 2min]','Tom de voz: [ex.: caloroso, enérgico, sério]','Estilo: linguagem coloquial e fácil de falar','Evitar: frases longas demais para respirar'],
-    output:'Entregue o roteiro pronto para narração, com marcações de pausa/ênfase entre [colchetes].'},
-  video:{label:'Vídeo',emoji:'🎬',ai:'Runway',aiAlt:'Sora / Kling',
-    reason:'geração de vídeo por IA é mais madura em Runway/Sora/Kling.',
-    role:'roteirista e diretor(a) de vídeo, especialista em conteúdo curto e storytelling',
-    steps:['Defina a mensagem central e o gancho dos primeiros 3 segundos.','Estruture o roteiro em cenas (visual + fala/legenda).','Especifique estilo visual, ritmo e trilha.','Finalize com chamada para ação.'],
-    specs:['Duração: [ex.: 30s vertical]','Estilo: [ex.: dinâmico, cinematográfico]','Incluir: descrição de cada cena e do áudio','Evitar: cenas longas e início sem gancho'],
-    output:'Entregue um roteiro em tabela por cena (tempo, visual, fala/legenda) + sugestão de trilha.'},
-  planilhas:{label:'Planilhas',emoji:'📈',ai:'Claude',aiAlt:'GPT-4',
-    reason:'criação de fórmulas, estrutura de planilha e lógica de cálculo funcionam bem no Claude/GPT-4.',
-    role:'especialista sênior em Excel/Google Sheets e modelagem de dados',
-    steps:['Entenda o objetivo da planilha e os dados disponíveis.','Defina a estrutura (abas, colunas, tipos de dado).','Crie fórmulas/funções necessárias e explique cada uma.','Sugira validações, formatação condicional e gráficos úteis.'],
-    specs:['Ferramenta: [Excel / Google Sheets]','Incluir: fórmulas prontas para colar e explicação','Considerar: escalabilidade e clareza','Evitar: fórmulas frágeis ou excessivamente complexas'],
-    output:'Entregue a estrutura proposta + as fórmulas em bloco, cada uma com explicação curta.'},
-  outro:{label:'Outro',emoji:'✨',ai:'Claude',aiAlt:'GPT-4',
-    reason:'para tarefas gerais e versáteis, Claude e GPT-4 oferecem o melhor equilíbrio.',
-    role:'especialista sênior no domínio descrito pelo usuário',
-    steps:['Esclareça o objetivo e o resultado esperado.','Quebre a tarefa em etapas lógicas de execução.','Execute cada etapa com profundidade e exemplos.','Revise a entrega quanto a completude e clareza.'],
-    specs:['Formato: [definir]','Tom/estilo: [definir]','Incluir: exemplos concretos quando ajudar','Evitar: respostas vagas ou genéricas'],
-    output:'Entregue a resposta estruturada e pronta para uso, no formato mais adequado à tarefa.'}
+  texto:{label:'Texto',emoji:'📝'},
+  imagem:{label:'Imagem',emoji:'🖼️'},
+  codigo:{label:'Código',emoji:'💻'},
+  analise:{label:'Análise',emoji:'📊'},
+  traducao:{label:'Tradução',emoji:'🌐'},
+  resumo:{label:'Resumo',emoji:'📄'},
+  audio:{label:'Áudio',emoji:'🎧'},
+  video:{label:'Vídeo',emoji:'🎬'},
+  planilhas:{label:'Planilhas',emoji:'📈'},
+  outro:{label:'Outro',emoji:'✨'}
 };
 
 /* ---- perfis específicos por domínio (detecção por palavra-chave) ---- */
 const PROFILES={
- bi:{kw:['power bi','powerbi','dax','dashboard','kpi','indicador','star schema','etl','data warehouse','databricks','semantic model'],ai:'Claude',aiAlt:'GPT-4 com interpretador',reason:'raciocínio técnico de dados, modelagem e DAX.',role:'Especialista Sênior em Business Intelligence e Engenheiro de Dados, com domínio de modelagem dimensional e DAX',
+ bi:{kw:['power bi','powerbi','dax','dashboard','kpi','indicador','star schema','etl','data warehouse','databricks','semantic model'],ai:'Claude',role:'Especialista Sênior em Business Intelligence e Engenheiro de Dados, com domínio de modelagem dimensional e DAX',
   steps:['Análise de Requisitos: extraia os KPIs, dimensões e métricas de sucesso da fonte fornecida.','Modelagem de Dados: defina o esquema (Star Schema), separando tabelas Fato e Dimensão.','Desenvolvimento: crie as medidas DAX e estruture as visualizações com boas práticas.','Validação: confira a consistência dos números e a clareza do storytelling visual.'],
   specs:['Priorize medidas DAX em vez de colunas calculadas','Aplique boas práticas de Data Storytelling e UI/UX (hierarquia, filtros intuitivos)','Documente as fórmulas complexas','Evite gráficos redundantes ou poluição visual'],
   output:'Entregue: 1) Sumário executivo; 2) Dicionário de dados (métricas e dimensões); 3) Estrutura DAX documentada; 4) Recomendações de layout.'},
- web:{kw:['cartão de visita','cartao de visita','vcard','landing page','site','página','pagina','html','css','tailwind','front-end','frontend','componente','react','linktree','interface'],ai:'Claude',aiAlt:'GPT-4',reason:'geração de artefatos web (HTML) direto no preview.',role:'Desenvolvedor(a) Front-end especialista em UI/UX e Creative Technologist',
+ web:{kw:['cartão de visita','cartao de visita','vcard','landing page','site','página','pagina','html','css','tailwind','front-end','frontend','componente','react','linktree','interface'],ai:'Claude',role:'Desenvolvedor(a) Front-end especialista em UI/UX e Creative Technologist',
   steps:['Análise: defina objetivo, público e identidade visual (cores, tipografia).','Arquitetura da Informação: organize a hierarquia visual e a navegação.','Implementação: construa em single-page responsivo (mobile-first).','Interatividade: adicione botões/links táteis e microanimações suaves.'],
   specs:['Estética moderna e clean, fiel à identidade da marca','Layout 100% mobile-first e responsivo','Use placeholders entre [colchetes] para dados/links ausentes','Código limpo e comentado para fácil replicação'],
   output:'Forneça o código em um único arquivo (HTML + Tailwind via CDN + ícones SVG inline), pronto para o preview do Claude.'},
- dev:{kw:['código','codigo','função','funcao','script','python','javascript','api','bug','refatorar','refatoração','algoritmo','backend','endpoint'],ai:'Claude',aiAlt:'GPT-4',reason:'raciocínio técnico e contexto de código.',role:'Engenheiro(a) de Software Sênior, especialista em código limpo e boas práticas',
+ dev:{kw:['código','codigo','função','funcao','script','python','javascript','api','bug','refatorar','refatoração','algoritmo','backend','endpoint'],ai:'Claude',role:'Engenheiro(a) de Software Sênior, especialista em código limpo e boas práticas',
   steps:['Entenda objetivo e restrições (linguagem, framework, versão).','Planeje a solução (estrutura, edge cases) antes de codar.','Implemente com código legível, comentado e testável.','Aponte riscos e sugira testes.'],
   specs:['Linguagem/stack: [definir]','Trate erros e casos extremos','Inclua exemplo de uso','Evite dependências desnecessárias'],
   output:'Entregue o código em bloco, seguido de explicação objetiva e instruções de teste.'},
- copy:{kw:['post','e-mail de vendas','email de vendas','anúncio','anuncio','copy','legenda','instagram','linkedin','persuasivo','newsletter','headline'],ai:'Claude',aiAlt:'GPT-4',reason:'redação persuasiva e raciocínio de copy.',role:'Copywriter de resposta direta e Redator(a) Sênior, especialista em conversão',
+ copy:{kw:['post','e-mail de vendas','email de vendas','anúncio','anuncio','copy','legenda','instagram','linkedin','persuasivo','newsletter','headline'],ai:'Claude',role:'Copywriter de resposta direta e Redator(a) Sênior, especialista em conversão',
   steps:['Identifique o público-alvo e a dor principal.','Defina o gancho e a promessa central.','Estruture com prova, benefícios e quebra de objeções.','Feche com CTA claro e P.S. estratégico.'],
   specs:['Tom: [definir — ex.: autoritário e próximo]','Parágrafos curtos (até 3 linhas)','Inclua 3 opções de título/assunto','Evite clichês e promessas irreais'],
   output:'Entregue: 1) 3 títulos/assuntos; 2) corpo do texto; 3) CTA; 4) P.S.'},
- juridico:{kw:['contrato','cláusula','clausula','jurídico','juridico','termos de uso','lgpd','advogad','prestação de serviço','rescisão','parecer','alienação fiduciária','leilão','imobiliário','due diligence','consolidação fiduciária'],ai:'Claude',aiAlt:'GPT-4',reason:'redação jurídica estruturada (contratos e pareceres) com base na legislação.',role:'Advogado(a) e Consultor(a) Jurídico(a) Sênior, especialista em contratos e pareceres técnico-jurídicos sob a legislação brasileira',
+ juridico:{kw:['contrato','cláusula','clausula','jurídico','juridico','termos de uso','lgpd','advogad','prestação de serviço','rescisão','parecer','alienação fiduciária','leilão','imobiliário','due diligence','consolidação fiduciária'],ai:'Claude',role:'Advogado(a) e Consultor(a) Jurídico(a) Sênior, especialista em contratos e pareceres técnico-jurídicos sob a legislação brasileira',
   steps:['Enquadramento: identifique a natureza da demanda, as partes/o ativo e a legislação aplicável.','Estrutura: organize o documento em seções claras (cabeçalho, análise, fundamentação, conclusão).','Fundamentação: sustente cada ponto na legislação e na doutrina pertinentes.','Riscos e Mitigação: aponte riscos e como tratá-los, com objetividade e sem alarmismo.'],
   specs:['Linguagem jurídica formal, técnica e segura','Cite as leis/artigos aplicáveis (ex.: Código Civil, LGPD, CTN art. 130)','Use [colchetes] para dados variáveis','Sem emojis, sem informalidade e sem alarmismo'],
   output:'Documento estruturado em seções/cláusulas numeradas (minuta ou parecer), pronto para preenchimento e envio.'},
- docbi:{kw:['descrição breve','descrever painel','mapear painel','documentar painel','painéis','painel do power bi','sobre o que é o painel','copilot','propósito do painel'],ai:'Microsoft Copilot',aiAlt:'Claude',reason:'documentação e síntese executiva de dashboards.',role:'Especialista Sênior em Business Intelligence e Analista de Dados, focado em documentação executiva de dashboards',
+ docbi:{kw:['descrição breve','descrever painel','mapear painel','documentar painel','painéis','painel do power bi','sobre o que é o painel','copilot','propósito do painel'],ai:'Microsoft Copilot',role:'Especialista Sênior em Business Intelligence e Analista de Dados, focado em documentação executiva de dashboards',
   steps:['Identificação de Domínio: identifique a área/processo de negócio do painel (ex.: Vendas, RH, Logística).','Propósito Central: determine o objetivo principal do painel.','Mapeamento de Conteúdo: identifique as principais métricas (KPIs) e os filtros/dimensões.','Síntese: condense em uma descrição curta e executiva.'],
   specs:['Resposta curta e direta: no máximo 3 linhas (ou 1 parágrafo)','Responda: o que é, qual o propósito e quais as principais informações','Tom profissional, focado em valor de negócio','Sem jargão técnico desnecessário'],
   output:'Entregue a descrição em até 3 linhas, pronta para repassar à gestão. Inclua 1–2 exemplos se ajudar.'},
- imagem:{kw:['imagem','foto','restaurar foto','logo','ilustração','ilustracao','midjourney','dall-e','headshot','retrato','banner','avatar'],ai:'Midjourney',aiAlt:'DALL·E / Nano Banana (Gemini)',reason:'geração e edição de imagem fotorrealista.',role:'Diretor(a) de Arte e especialista sênior em geração de imagens por IA',
+ imagem:{kw:['imagem','foto','restaurar foto','logo','ilustração','ilustracao','midjourney','dall-e','headshot','retrato','banner','avatar'],ai:'Midjourney',role:'Diretor(a) de Arte e especialista sênior em geração de imagens por IA',
   steps:['Defina sujeito principal, composição e enquadramento.','Especifique estilo visual, iluminação e paleta.','Detalhe ambiente, textura e nível de realismo.','Liste parâmetros (proporção, resolução, qualidade).'],
   specs:['Estilo: [fotorrealista / ilustração / 3D]','Iluminação: [ex.: luz natural suave, estúdio]','Proporção: [1:1 / 16:9 / 4:5]','Evite distorções, texto incorreto e artefatos'],
   output:'Forneça o prompt em inglês (melhor compatibilidade) e uma versão em português.'},
- video:{kw:['vídeo','video','reels','roteiro de vídeo','tiktok','youtube','shorts'],ai:'Runway',aiAlt:'Sora / Kling',reason:'geração de vídeo por IA.',role:'Roteirista e Diretor(a) de vídeo, especialista em conteúdo curto',
+ video:{kw:['vídeo','video','reels','roteiro de vídeo','tiktok','youtube','shorts'],ai:'Runway',role:'Roteirista e Diretor(a) de vídeo, especialista em conteúdo curto',
   steps:['Defina a mensagem e o gancho dos 3 primeiros segundos.','Estruture o roteiro em cenas (visual + fala/legenda).','Especifique estilo visual, ritmo e trilha.','Finalize com chamada para ação.'],
   specs:['Duração: [ex.: 30s vertical]','Estilo: [ex.: dinâmico, cinematográfico]','Descreva cada cena e o áudio','Evite início sem gancho'],
   output:'Entregue um roteiro em tabela por cena (tempo, visual, fala/legenda) + sugestão de trilha.'},
- audio:{kw:['áudio','locução','locucao','narração','narracao','voiceover','podcast','jingle'],ai:'ElevenLabs',aiAlt:'Claude (roteiro)',reason:'síntese de voz natural.',role:'Roteirista e Diretor(a) de áudio, especialista em narração',
+ audio:{kw:['áudio','locução','locucao','narração','narracao','voiceover','podcast','jingle'],ai:'ElevenLabs',role:'Roteirista e Diretor(a) de áudio, especialista em narração',
   steps:['Defina objetivo, público e duração.','Escreva o roteiro em linguagem falada.','Marque entonação, pausas e ênfase.','Ajuste o ritmo para soar natural.'],
   specs:['Duração: [ex.: 30s]','Tom de voz: [ex.: caloroso, enérgico]','Linguagem coloquial e fácil de falar','Evite frases longas demais para respirar'],
   output:'Entregue o roteiro pronto para narração, com marcações de pausa/ênfase entre [colchetes].'},
- traducao:{kw:['traduzir','tradução','traducao','versão em inglês','localizar','localização'],ai:'DeepL',aiAlt:'Claude / GPT-4',reason:'precisão idiomática.',role:'Tradutor(a) profissional, especialista em localização e adaptação cultural',
+ traducao:{kw:['traduzir','tradução','traducao','versão em inglês','localizar','localização'],ai:'DeepL',role:'Tradutor(a) profissional, especialista em localização e adaptação cultural',
   steps:['Identifique idioma de origem e destino e o registro.','Traduza preservando significado, tom e intenção.','Adapte expressões idiomáticas e referências culturais.','Revise fluência e naturalidade.'],
   specs:['Idiomas: [origem] → [destino]','Registro: [formal / informal / técnico]','Preserve termos técnicos e nomes próprios','Evite tradução literal artificial'],
   output:'Entregue a tradução final; em caso de ambiguidade, mostre a melhor opção e uma nota curta.'},
- resumo:{kw:['resumir','resumo','sintetizar','tldr','síntese','sintese','condensar'],ai:'Claude',aiAlt:'GPT-4',reason:'janela de contexto longa e síntese fiel.',role:'Especialista sênior em síntese e curadoria de conteúdo',
+ resumo:{kw:['resumir','resumo','sintetizar','tldr','síntese','sintese','condensar'],ai:'Claude',role:'Especialista sênior em síntese e curadoria de conteúdo',
   steps:['Identifique a tese central e os pontos relevantes.','Descarte redundâncias e detalhes secundários.','Organize as ideias em ordem lógica.','Garanta fidelidade ao original.'],
   specs:['Tamanho: [ex.: 5 bullets / 200 palavras]','Mantenha dados e conclusões essenciais','Não inclua opinião própria','Não invente informação fora da fonte'],
   output:'Entregue o resumo no formato pedido + 3 pontos-chave em bullets.'},
- dados:{kw:['analisar','análise de dados','analise de dados','planilha','csv','inadimplência','inadimplencia','relatório','relatorio','tendência','tendencia','estatística','dataset'],ai:'Claude',aiAlt:'GPT-4 com interpretador',reason:'interpretação de dados e síntese analítica.',role:'Analista de Dados Sênior, especialista em transformar dados em decisões',
+ dados:{kw:['analisar','análise de dados','analise de dados','planilha','csv','inadimplência','inadimplencia','relatório','relatorio','tendência','tendencia','estatística','dataset'],ai:'Claude',role:'Analista de Dados Sênior, especialista em transformar dados em decisões',
   steps:['Valide as colunas e a qualidade dos dados fornecidos.','Calcule as métricas-chave e segmentações relevantes.','Identifique padrões, anomalias e concentrações de risco.','Traduza em insights e recomendações priorizadas.'],
   specs:['Baseie cada conclusão nos números; sinalize o nível de confiança','Não invente dados; marque lacunas com [a confirmar]','Quantifique e compare','Evite conclusões sem suporte'],
   output:'Entregue: 1) resumo executivo; 2) tabelas/indicadores; 3) principais riscos; 4) recomendações priorizadas.'},
- planilha:{kw:['excel','google sheets','fórmula','formula','vlookup','procv','tabela dinâmica','tabela dinamica','macro'],ai:'Claude',aiAlt:'GPT-4',reason:'criação de fórmulas e estrutura de planilha.',role:'Especialista sênior em Excel/Google Sheets e modelagem de dados',
+ planilha:{kw:['excel','google sheets','fórmula','formula','vlookup','procv','tabela dinâmica','tabela dinamica','macro'],ai:'Claude',role:'Especialista sênior em Excel/Google Sheets e modelagem de dados',
   steps:['Entenda o objetivo da planilha e os dados disponíveis.','Defina a estrutura (abas, colunas, tipos).','Crie as fórmulas/funções e explique cada uma.','Sugira validações, formatação condicional e gráficos.'],
   specs:['Ferramenta: [Excel / Google Sheets]','Inclua fórmulas prontas para colar','Considere escalabilidade e clareza','Evite fórmulas frágeis'],
   output:'Entregue a estrutura proposta + as fórmulas em bloco, cada uma com explicação curta.'},
- automacao:{kw:['automação','automacao','n8n','workflow','integração','integracao','mcp','agente','zapier','make','webhook','rpa'],ai:'Claude',aiAlt:'GPT-4',reason:'orquestração e uso de ferramentas/MCP.',role:'Especialista em Automação e Orquestração de Agentes/Workflows',
+ automacao:{kw:['automação','automacao','n8n','workflow','integração','integracao','mcp','agente','zapier','make','webhook','rpa'],ai:'Claude',role:'Especialista em Automação e Orquestração de Agentes/Workflows',
   steps:['Mapeie o gatilho, as etapas e o resultado esperado do fluxo.','Defina integrações, ferramentas (MCP/APIs) e dados trafegados.','Trate erros, limites de taxa e reprocessamento.','Documente o passo a passo e os critérios de sucesso.'],
   specs:['Ferramenta/stack: [n8n / Make / MCP / etc.]','Inclua tratamento de erro e idempotência','Cuide da segurança de credenciais','Evite passos manuais desnecessários'],
   output:'Entregue: 1) visão geral do fluxo; 2) etapas detalhadas; 3) integrações; 4) critérios de sucesso/parada.'},
- estrategia:{kw:['estratégia','estrategia','go-to-market','gtm','lançamento','lancamento','roadmap','posicionamento','plano de negócio'],ai:'Claude',aiAlt:'GPT-4',reason:'raciocínio estratégico estruturado.',role:'Estrategista de Marketing e Go-to-Market Sênior',
+ estrategia:{kw:['estratégia','estrategia','go-to-market','gtm','lançamento','lancamento','roadmap','posicionamento','plano de negócio'],ai:'Claude',role:'Estrategista de Marketing e Go-to-Market Sênior',
   steps:['Defina objetivo, público (ICP) e proposta de valor.','Mapeie canais, mensagem central e diferenciais.','Estruture um plano por fases com ações e métricas.','Defina riscos, critérios de sucesso e pontos de decisão.'],
   specs:['Foque em ações acionáveis, não teoria','Vincule cada ação a um risco/objetivo','Inclua métricas de acompanhamento','Evite generalidades'],
   output:'Entregue um plano em formato de roadmap por sprint/semana, com ação, responsável, métrica e entregável.'},
- apresentacao:{kw:['apresentação','apresentacao','slides','slide','deck','powerpoint','ppt','pptx'],ai:'Claude',aiAlt:'Gamma / GPT-4',reason:'estruturação de conteúdo e geração de deck (.pptx).',role:'Designer de Apresentações Estratégicas e especialista em storytelling executivo',
+ apresentacao:{kw:['apresentação','apresentacao','slides','slide','deck','powerpoint','ppt','pptx'],ai:'Claude',role:'Designer de Apresentações Estratégicas e especialista em storytelling executivo',
   steps:['Análise de Conteúdo: extraia e organize as informações da fonte fornecida.','Mapeamento de Template: identifique os layouts adequados (capa, lista, roadmap, detalhe) respeitando a identidade visual.','Adaptação: sintetize cada item em mensagens de negócio claras (máx. 3 por slide).','Estruturação do Deck: monte a sequência lógica (capa, resumo, conteúdo, gap analysis, próximos passos).'],
   specs:['Fidelidade visual: use só as cores e fontes do template fornecido','Máximo 3 pontos-chave por slide','Links clicáveis destacados como botões/hyperlinks','Tom executivo, focado em valor'],
   output:'Gere o arquivo .pptx editável. Se houver limite de exportação, forneça o roteiro slide a slide indicando o layout do template para cada um.'},
- validacao:{kw:['validar os dados','validação de dados','validacao de dados','reconciliação','reconciliacao','conferir dados','paridade','qa de dados','auditoria de dados'],ai:'Claude',aiAlt:'GPT-4 com interpretador',reason:'QA/auditoria de dados e geração de queries SQL.',role:'Engenheiro de Dados e Analista de QA Sênior, especialista em Governança e reconciliação de dados',
+ validacao:{kw:['validar os dados','validação de dados','validacao de dados','reconciliação','reconciliacao','conferir dados','paridade','qa de dados','auditoria de dados'],ai:'Claude',role:'Engenheiro de Dados e Analista de QA Sênior, especialista em Governança e reconciliação de dados',
   steps:['Integridade (linhas): compare a contagem de registros entre origem, transformação e modelo final.','Acurácia (indicadores): valide os principais KPIs (somas, médias, contagens distintas) com o valor nominal exato.','Consistência temporal: confira se os filtros de data retornam os mesmos valores na origem e no painel.','Qualidade: verifique nulos, duplicatas inesperadas e integridade referencial.'],
   specs:['Excel: fórmulas de conferência (SOMA, CONT.VALORES, tabela dinâmica)','SQL/Databricks: queries otimizadas com alias e joins corretos','Power BI: use Performance Analyzer / Analisar no Excel para extrair o DAX','Tom técnico de auditoria; velocidade com segurança'],
   output:'Entregue: 1) Checklist de validação (Indicador | Origem | Destino | Tolerância); 2) Scripts SQL de conferência; 3) Plano de evidência; 4) 2+ validações extras sugeridas.'},
- engdados:{kw:['databricks','spark sql','camada gold','formato gold','bronze','silver','lakehouse','etl','star schema','relacionamentos','chave estrangeira','query sql','modelagem'],ai:'Claude',aiAlt:'GPT-4',reason:'engenharia de dados em SQL/Databricks e modelagem dimensional.',role:'Engenheiro de Dados e Analista de BI Sênior, especialista em Databricks (Spark SQL) e modelagem dimensional (Star Schema)',
+ engdados:{kw:['databricks','spark sql','camada gold','formato gold','bronze','silver','lakehouse','etl','star schema','relacionamentos','chave estrangeira','query sql','modelagem'],ai:'Claude',role:'Engenheiro de Dados e Analista de BI Sênior, especialista em Databricks (Spark SQL) e modelagem dimensional (Star Schema)',
   steps:['Mapeamento de Relacionamentos: analise os nomes das tabelas e identifique PKs e FKs prováveis entre Fatos e Dimensões.','Identificação de Análises: proponha os KPIs e visões gerenciais extraíveis das bases (ex.: Realizado vs. Orçado, por Centro de Custo).','Desenvolvimento SQL (camada Gold): crie queries Spark SQL otimizadas, com limpeza de nulos, padronização de tipos e granularidade correta.','Consolidação para Power BI: estruture o resultado em um Star Schema eficiente.'],
   specs:['Use JOINs explícitos e eficientes','Comente o código com a lógica de negócio','Nomes de colunas claros para o usuário final de BI','Priorize performance para o refresh do Power BI'],
   output:'Entregue: 1) Dicionário de relacionamentos (tabelas e chaves); 2) Lista de insights/dashboards sugeridos; 3) Scripts SQL Gold separados por tabela, prontos para o Databricks.'},
- comparacao:{kw:['comparação','comparar','duas bases','base antiga','base legada','diferenças entre','migração de base','homologação'],ai:'Claude',aiAlt:'GPT-4 com interpretador',reason:'auditoria comparativa entre bases/versões de dados.',role:'Especialista Sênior em Engenharia de Dados e BI, focado em auditoria comparativa de bases',
+ comparacao:{kw:['comparação','comparar','duas bases','base antiga','base legada','diferenças entre','migração de base','homologação'],ai:'Claude',role:'Especialista Sênior em Engenharia de Dados e BI, focado em auditoria comparativa de bases',
   steps:['Mapeamento Estrutural: compare os schemas — colunas novas, removidas ou renomeadas.','Análise de Interseção: identifique chaves/registros comuns às duas bases (pontos de convergência).','Análise de Divergência: registros só na base antiga, só na nova, e valores divergentes para a mesma chave.','Tipagem e Qualidade: mudanças de formato (texto/número), nulos e vazios.'],
   specs:['Tom técnico, objetivo e analítico','Aponte prováveis renomeações (nome diferente, conteúdo igual)','Não ignore desvios de formatação (ex.: . vs ,)','Baseie o veredito nos dados'],
   output:'Entregue: 1) Sumário executivo (linhas/colunas e % de similaridade); 2) O que é igual; 3) Relatório de deltas (estrutura, conteúdo, gaps); 4) Veredito técnico de qual base usar.'},
- fullstack:{kw:['criar um site','criar um app','aplicativo','plataforma','sistema web','full stack','ferramenta web','whisper','transcrever'],ai:'Claude',aiAlt:'GPT-4',reason:'projeto e implementação de aplicação completa (full stack).',role:'Engenheiro(a) de Software Full Stack Sênior e Arquiteto(a) de Soluções, com foco em stacks de custo zero (free tier / open source)',
+ fullstack:{kw:['criar um site','criar um app','aplicativo','plataforma','sistema web','full stack','ferramenta web','whisper','transcrever'],ai:'Claude',role:'Engenheiro(a) de Software Full Stack Sênior e Arquiteto(a) de Soluções, com foco em stacks de custo zero (free tier / open source)',
   steps:['Análise de Viabilidade: escolha a stack e explique por que ela garante custo zero.','Arquitetura: defina frontend, backend, processamento e hospedagem.','Implementação: codifique backend e frontend de forma modular e comentada.','Deploy: indique como publicar de graça (ex.: Streamlit Cloud, Hugging Face Spaces, Vercel).'],
   specs:['Priorize ferramentas open source e free tiers generosos','Código modular, comentado e pronto para rodar','Liste dependências e setup','Trate os formatos/edge cases relevantes'],
   output:'Entregue: 1) Arquitetura da solução; 2) Blocos de código completos; 3) Guia de execução; 4) Dicas de deploy gratuito.'}
@@ -718,7 +678,7 @@ function svgBars(data){
   const bw=(w-pad*2)/n;let s='';
   data.forEach((d,i)=>{const bh=(d.value/max)*(H-pad-20),x=pad+i*bw,y=H-20-bh;
     s+=`<rect x="${(x+bw*0.15).toFixed(1)}" y="${y.toFixed(1)}" width="${(bw*0.7).toFixed(1)}" height="${Math.max(0,bh).toFixed(1)}" rx="3" fill="var(--accent)"></rect>`;
-    if(d.label!=='')s+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-5}" font-size="15" text-anchor="middle" fill="var(--text-soft)">${d.label}</text>`;
+    if(d.label!=='')s+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-5}" font-size="10" text-anchor="middle" fill="var(--text-soft)">${d.label}</text>`;
     if(d.value)s+=`<text x="${(x+bw/2).toFixed(1)}" y="${(y-3).toFixed(1)}" font-size="11" text-anchor="middle" fill="var(--text-soft)">${d.value}</text>`;});
   return `<svg viewBox="0 0 ${w} ${H}" width="100%" preserveAspectRatio="xMidYMid meet">${s}</svg>`;
 }
@@ -811,6 +771,22 @@ renderTypeChips();
 renderDashboard();
 const start=location.hash.replace('#','');
 if(start&&document.getElementById('page-'+start))go(start);
+/* ---- microfone (Web Speech API) ---- */
+(function(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const btn=document.getElementById('g-mic');
+  if(!SR){btn.disabled=true;btn.title='Navegador não suporta reconhecimento de voz';btn.style.opacity='.35';return;}
+  const rec=new SR();
+  rec.lang='pt-BR';
+  rec.continuous=false;
+  rec.interimResults=false;
+  let active=false;
+  btn.addEventListener('click',()=>{if(active){rec.stop();return;}try{rec.start();}catch(e){}});
+  rec.onstart=()=>{active=true;btn.classList.add('recording');btn.title='Gravando… clique para parar';};
+  rec.onresult=(e)=>{const t=Array.from(e.results).map(r=>r[0].transcript).join('');const ta=document.getElementById('g-idea');ta.value=ta.value?(ta.value.trimEnd()+' '+t):t;ta.focus();};
+  rec.onerror=(e)=>{if(e.error!=='aborted')console.warn('SpeechRecognition:',e.error);};
+  rec.onend=()=>{active=false;btn.classList.remove('recording');btn.title='Falar minha ideia';};
+})();
 </script>
 </body>
 </html>
